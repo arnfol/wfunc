@@ -59,7 +59,6 @@ task automatic ``pref``_pack(sample_t data[], int wait_seed=0);\
 	end\
 endtask
 
-
       
 `define AXIS_SLV(pref)\
 \
@@ -110,3 +109,15 @@ task automatic ``pref``_get_pack(int wait_for=0, bit rand_wait=1);\
 		``pref``_get(wait_for,rand_wait);\
 	end while (!``pref``_eop());\
 endtask
+
+
+
+`define AXIS_MST_RST(pref,eq)\
+\
+``pref``_tvalid ``eq`` 0;\
+``pref``_tr     ``eq`` axis_trans0;
+
+`define AXIS_SLV_RST(pref,eq)\
+\
+``pref``_tready ``eq`` 0;\
+
