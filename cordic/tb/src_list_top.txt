@@ -1,0 +1,14 @@
+#
+# This is list of files for the RMAP target project.
+# 
+# The syntax of this file include comments (lines starting with "#")
+# and file paths (all other not empty lines).
+# 
+# This file is used by tcl-script to compile project.
+# The order of the files matters.
+#
+
+
+cordic.sv
+cordic_top.sv
+angle_gen_2.sv
