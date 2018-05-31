@@ -1,0 +1,12 @@
+If this file does not contain anything(except the stage numbers), then the cordic is calculated correctly.
+stage =           3
+stage =           4
+stage =           5
+stage =           6
+stage =           7
+stage =           8
+stage =           9
+stage =          10
+stage =          11
+stage =          12
+stage =          13
