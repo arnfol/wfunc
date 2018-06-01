@@ -53,7 +53,7 @@ task ``pref``_pack(sample_t data[], int wait_seed=0);\
 	axis_t tmp;\
 	foreach(data[i]) begin\
 		tmp.tdata = data[i]; \
-		tmp.tlast = (i==$size(data)); \
+		tmp.tlast = (i==($size(data)-1)); \
 		if(wait_seed != 0) ``pref``_cyc_wait($urandom_range(wait_seed));\
 		``pref``_send(tmp);\
 	end\
