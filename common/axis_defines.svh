@@ -43,7 +43,9 @@ task ``pref``_send(axis_t data);\
 	``pref``_tr     <= data;\
 	``pref``_tvalid <= 1;\
 	do @(posedge ``pref``_tclk); while(!``pref``_hshake());\
-	``pref``_tr     <= axis_trans0;\
+	``pref``_tr.tdata.re <= 0;\
+	``pref``_tr.tdata.im <= 0;\
+	``pref``_tr.tlast    <= 0;\
 	``pref``_tvalid <= 0;\
 endtask\
 \
@@ -114,8 +116,10 @@ endtask
 
 `define AXIS_MST_RST(pref,eq)\
 \
-``pref``_tvalid ``eq`` 0;\
-``pref``_tr     ``eq`` axis_trans0;
+``pref``_tvalid      ``eq`` 0;\
+``pref``_tr.tdata.re ``eq`` 0;\
+``pref``_tr.tdata.im ``eq`` 0;\
+``pref``_tr.tlast    ``eq`` 0;
 
 `define AXIS_SLV_RST(pref,eq)\
 \
