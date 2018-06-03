@@ -35,13 +35,9 @@ package axis_pkg;
 		logic [31:0] im;
 	} sample_t;
 
-	sample_t sample0 = '{0,0};
-
 	typedef struct {
 		sample_t tdata;
 		logic    tlast;
 	} axis_t;
-
-	axis_t axis_trans0 = '{sample0,0};
 
 endpackage
