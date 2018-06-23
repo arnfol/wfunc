@@ -109,7 +109,7 @@ function ``pref``_hshake();\
 endfunction\
 \
 function ``pref``_eop();\
-	``pref``_eop = ``pref``_hshake && ``pref``_tr.tlast;\
+	``pref``_eop = ``pref``_hshake && (``pref``_tr.tlast === 1'b1);\
 endfunction \
 \
 /* monitor tasks */\
