@@ -24,9 +24,9 @@
     -------------------------------------------------------------------------------
 
     Project     : FFT_CORE
-    Author      : Konovalov Vitaliy 
-    Description : 
-   
+    Author      : Konovalov Vitaliy
+    Description :
+
 */
 package axis_pkg;
 
@@ -34,6 +34,11 @@ package axis_pkg;
 		logic [31:0] re;
 		logic [31:0] im;
 	} sample_t;
+
+    typedef struct {
+        logic [15:0] re;
+        logic [15:0] im;
+    } sample_t_int;
 
 	typedef struct {
 		sample_t tdata;
