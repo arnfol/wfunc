@@ -36,7 +36,8 @@ module spram #(
 	input                 clk ,
 	input        [DW-1:0] data,
 	input        [AW-1:0] addr,
-	input                 we  ,
+    input                 we  ,
+	input                 cs  , 
 	output logic [DW-1:0] q
 );
 
@@ -46,8 +47,10 @@ module spram #(
     logic [AW-1:0] addr_ff           ;
 
     always @ (posedge clk) begin
-        addr_ff <= addr;
-        if(we) ram[addr] <= data;
+        if(cs) begin
+            addr_ff <= addr;
+            if(we) ram[addr] <= data;
+        end
     end
 
     assign q = ram[addr_ff];
