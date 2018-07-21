@@ -36,6 +36,7 @@ module complex_int_mult
 ) (
     input               clk  ,
     input               rst_n,
+    input               en   ,
     input  sample_t_int a    , // input 1
     input  sample_t_int b    , // input 2
     output sample_t_int z      // result
@@ -49,9 +50,9 @@ module complex_int_mult
             for (int i = 0; i < PIPE_NUM; i++) begin
                 z_reg[i] <= '{0,0};
             end 
-        end else begin
-            z_reg[0].re = a.re*b.re - a.im*b.im;
-            z_reg[0].im = a.re*b.im + a.im*b.re;
+        end else if(en) begin
+            z_reg[0].re <= a.re*b.re - a.im*b.im;
+            z_reg[0].im <= a.re*b.im + a.im*b.re;
             for (int i = 1; i < PIPE_NUM; i++) begin
                 z_reg[i] <= z_reg[i-1];
             end 
