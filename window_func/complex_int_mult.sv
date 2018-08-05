@@ -42,7 +42,7 @@ module complex_int_mult
     output sample_t_int z      // result
 );
 
-    output sample_t_int z_reg[PIPE_NUM]; // not pipelined result
+    sample_t_int z_reg[PIPE_NUM]; // not pipelined result
 
     // pipeline
     always_ff @(posedge clk or negedge rst_n) begin : proc_z_reg
@@ -57,7 +57,6 @@ module complex_int_mult
                 z_reg[i] <= z_reg[i-1];
             end 
         end
-        end // of for
     end
 
     assign z = z_reg[PIPE_NUM];

@@ -64,7 +64,7 @@ module window_func
 		logic [APB_AW-1:0] out;
 
 		for (int i = 0; i < APB_AW; i++) begin
-			out[i] = in[APW-i];
+			out[i] = in[APB_AW-i];
 		end
 
 		return out;
@@ -80,20 +80,35 @@ module window_func
 
 	logic [APB_AW-2:2] fsm_addr;
 
-	logic [MEM_AW-1:0]    mem_addr ;
-	logic                 mem_write;
-	logic [BUS_NUM][31:0] mem_wdata;
-	logic [BUS_NUM][31:0] mem_rdata;
-	logic [BUS_NUM]       mem_cs   ;
+	logic [MEM_AW-1:0]        mem_addr ;
+	logic                     mem_write;
+	logic [BUS_NUM-1:0][31:0] mem_wdata;
+	logic [BUS_NUM-1:0][31:0] mem_rdata;
+	logic [BUS_NUM-1:0]       mem_cs   ;
 
 	logic [MATH_DELAY:0] tvalid_pipe;
 	logic                data_line_en;
+
+	localparam REGS_NUM = 2;
+	localparam [REGS_NUM-1:0][31:0] regs_rst = {32'd0,32'd0};
+
+	logic [REGS_NUM-1:0][31:0] wr_regs, wr_regs_del, rd_regs;
+
+	logic [APB_AW-4:0] reg_addr ;
+	logic              reg_write;
+	logic [      31:0] reg_wdata;
+	logic [      31:0] reg_rdata;
+	logic              reg_en   ;
+
+	logic one_pack_mode;
+	logic soft_rst;
+	logic change_state;
 
 
 	/*------------------------------------------------------------------------------
 	--  MEM
 	------------------------------------------------------------------------------*/
-	generate for (int i = 0; i < BUS_NUM; i++) begin
+	generate for (genvar i = 0; i < BUS_NUM; i++) begin
 		spram #(.DW(32), .AW(MEM_AW)) u_spram (
 			.clk (clk           ),
 			.data(mem_wdata[i]),
@@ -200,13 +215,13 @@ module window_func
 
 
 	// math
-	generate for (int i = 0; i < BUS_NUM; i++) begin
+	generate for (genvar i = 0; i < BUS_NUM; i++) begin
 				
 		sample_t_int a;
 		sample_t_int b;
 
 		assign b.re = mem_rdata[i][15:0];
-		assign b.im = mem_rdata[i][32:16];
+		assign b.im = mem_rdata[i][31:16];
 
 		// additional delay to compensate memory delay
 		always_ff @(posedge clk or negedge rst_n) begin : proc_add_delay
@@ -231,17 +246,6 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  APB CONTROL REGS
 	------------------------------------------------------------------------------*/
-	localparam REGS_NUM = 2;
-	localparam [REGS_NUM-1:0][31:0] regs_rst = {32'd0,32'd0};
-
-	logic [REGS_NUM-1:0][31:0] wr_regs, wr_regs_del, rd_regs;
-
-	logic [APB_AW-4:0] reg_addr ;
-	logic              reg_write;
-	logic [      31:0] reg_wdata;
-	logic [      31:0] reg_rdata;
-	logic              reg_en   ;
-
 	assign reg_addr  = paddr[APB_AW-2:2];
 	assign reg_write = pwrite;
 	assign reg_wdata = pwdata;
@@ -267,7 +271,7 @@ module window_func
 		rd_regs[1][9:8] = state;
 	end
 
-	assign soft_rst     <= (wr_regs[0][0] ^ wr_regs_del[0][0]) ? 1 : 0;
-	assign change_state <= (wr_regs[0][8] ^ wr_regs_del[0][8]) ? 1 : 0;
+	assign soft_rst     = (wr_regs[0][0] ^ wr_regs_del[0][0]) ? 1 : 0;
+	assign change_state = (wr_regs[0][8] ^ wr_regs_del[0][8]) ? 1 : 0;
 
 endmodule
