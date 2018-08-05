@@ -114,7 +114,7 @@ module window_func
 		mem_addr  = '0;
 		mem_cs    = '0;
 		mem_wdata = '0;
-		prdata    = '0;
+		prdata    = reg_rdata;
 
 		nxt_state = IDLE;
 
@@ -128,9 +128,10 @@ module window_func
 				mem_write = pwrite;
 				mem_addr  = fsm_addr[MEM_AW-1:0];
 				mem_cs[fsm_addr[APB_AW-1:MEM_AW]]   = psel & !penable;
-				prdata   = mem_rdata[fsm_addr[APB_AW-1:MEM_AW]];
 
-				nxt_state = (/*reg write event*/) ? WAIT : IDLE;
+				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-1:MEM_AW]];
+
+				nxt_state = (change_state) ? WAIT : IDLE;
 			end
 
 			WAIT : begin // wait for new packet
@@ -140,7 +141,7 @@ module window_func
 				mem_addr = sample_cntr;
 
 				if(in_tready & in_tvalid) nxt_state = BUSY;
-				else if(/*reg write event*/) nxt_state = IDLE;
+				else if(change_state) nxt_state = IDLE;
 				else nxt_state = WAIT;
 			end
 
@@ -151,7 +152,7 @@ module window_func
 				mem_addr = sample_cntr;
 
 				if(in_tready & in_tvalid & in_tlast) begin 
-					nxt_state = (/*reg*/) ? IDLE : WAIT;
+					nxt_state = (one_pack_mode) ? IDLE : WAIT;
 				end else begin 
 					nxt_state = BUSY;
 				end
@@ -166,7 +167,7 @@ module window_func
 	always_ff @(posedge clk or negedge rst_n) begin : proc_state
 		if(~rst_n) begin
 			state <= IDLE;
-		end else if(/*reg write event*/) begin
+		end else if(soft_rst) begin
 			state <= IDLE;
 		end else begin
 			state <= nxt_state;
@@ -230,5 +231,43 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  APB CONTROL REGS
 	------------------------------------------------------------------------------*/
-	
+	localparam REGS_NUM = 2;
+	localparam [REGS_NUM-1:0][31:0] regs_rst = {32'd0,32'd0};
+
+	logic [REGS_NUM-1:0][31:0] wr_regs, wr_regs_del, rd_regs;
+
+	logic [APB_AW-4:0] reg_addr ;
+	logic              reg_write;
+	logic [      31:0] reg_wdata;
+	logic [      31:0] reg_rdata;
+	logic              reg_en   ;
+
+	assign reg_addr  = paddr[APB_AW-2:2];
+	assign reg_write = pwrite;
+	assign reg_wdata = pwdata;
+	assign reg_rdata = rd_regs[reg_addr];
+	assign reg_en    = psel & !penable & paddr[APB_AW-1];
+
+	always_ff @(posedge clk or negedge rst_n) begin : proc_regs
+		if(~rst_n) begin
+			wr_regs_del <= regs_rst;
+			wr_regs     <= regs_rst;
+		end else begin
+			wr_regs_del <= wr_regs;
+			if(reg_en & reg_write) wr_regs[reg_addr] <= reg_wdata;
+		end
+	end
+
+	always_comb begin 
+		rd_regs = regs_rst;
+
+		one_pack_mode = wr_regs[1][0];
+		rd_regs[1][0] = one_pack_mode;
+
+		rd_regs[1][9:8] = state;
+	end
+
+	assign soft_rst     <= (wr_regs[0][0] ^ wr_regs_del[0][0]) ? 1 : 0;
+	assign change_state <= (wr_regs[0][8] ^ wr_regs_del[0][8]) ? 1 : 0;
+
 endmodule
