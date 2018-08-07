@@ -36,8 +36,8 @@ package axis_pkg;
 	} sample_t;
 
     typedef struct {
-        logic [15:0] re;
-        logic [15:0] im;
+        logic signed  [15:0] re;
+        logic signed  [15:0] im;
     } sample_t_int;
 
 	typedef struct {
