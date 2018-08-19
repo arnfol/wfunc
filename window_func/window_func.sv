@@ -1,33 +1,96 @@
 /*
-    ------------------------------------------------------------------------------
-    -- The MIT License (MIT)
-    --
-    -- Copyright (c) <2018> Konovalov Vitaliy
-    --
-    -- Permission is hereby granted, free of charge, to any person obtaining a copy
-    -- of this software and associated documentation files (the "Software"), to deal
-    -- in the Software without restriction, including without limitation the rights
-    -- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    -- copies of the Software, and to permit persons to whom the Software is
-    -- furnished to do so, subject to the following conditions:
-    --
-    -- The above copyright notice and this permission notice shall be included in
-    -- all copies or substantial portions of the Software.
-    --
-    -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    -- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    -- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    -- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    -- THE SOFTWARE.
-    -------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+-- The MIT License (MIT)
+--
+-- Copyright (c) <2018> Konovalov Vitaliy
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+-------------------------------------------------------------------------------
 
-    Project     : FFT_CORE
-    Author      : Konovalov Vitaliy 
-    Description : 
-	              
-	              
+Project     : FFT_CORE
+Author      : Konovalov Vitaliy 
+Description : 
+					
+Description below is in markdown format, you can use editor to get pretty view.
+To make this document we use typora editor.
+
+# APB registers map #
+
+Registers are given in a following format: 
+## <ADDRESS> : <REG NAME> ##
+<DESCRIPTION>
+
+## x0000 - [(FFT_SIZE-1)*4] : Window values ##
+
+| BITS       | ACCESS  | RST VALUE  | DESCRIPTION                     |
+|------------|---------|------------|---------------------------------|
+| 31-16      |  RW     |  x0000     | Imaginary part of window sample |
+| 15-0       |  RW     |  x0000     | Real part of window sample      |
+
+**Note:** If parameter APB_A_REV=1, address of these registers is bit-reverted.
+For instance, if FFT_SIZE=8192 and you are writing to address x0004, you will 
+access x4000 instead. This was done to simplify work with reverted-order 
+packets after FFT.
+
+## [FFT_SIZE*4] : Control register 1 ##
+
+| BITS       | ACCESS  | RST VALUE  | DESCRIPTION                                        |
+|------------|---------|------------|----------------------------------------------------|
+| 31-9       |  RO     |  x000000   | Unused                                             |
+| 8          |  WO     |  -         | Writing 1 executes command "CHANGE STATE"          |
+| 7-1        |  RO     |  x00       | Unused                                             |
+| 0          |  WO     |  -         | FSM reset. Writing 1 puts FSM into IDLE state      |
+
+## [(FFT_SIZE+1)*4] : Status & Control register 2 ##
+
+| BITS       | ACCESS  | RST VALUE  | DESCRIPTION                                        |
+|------------|---------|------------|----------------------------------------------------|
+| 31-10      |  RO     |  x000000   | Unused                                             |
+| 9-8        |  RO     |  x0        | FSM state. IDLE=x0, WAIT=x1, BUSY=x2.              |
+| 7-1        |  RO     |  x00       | Unused                                             |
+| 0          |  RW     |  x0        | 1 enables FSM one-packet mode.                     |
+
+**Note:** One-packet mode force FSM moving to the IDLE state after handling one packet.
+If not set, after handling packet FSM goes to the WAIT state and wait for another packet
+or command.
+
+# FSM #
+## State diagram ##
+
+	                         -4-> IDLE
+	IDLE -1-> WAIT -2-> BUSY -5-> WAIT
+	               -3-> IDLE
+
+## State description ##
+**Note:** In any state write 1 to FSM reset register puts FSM into IDLE state.
+### IDLE ###
+In this state module do nothing. You can access and configure all registers. After
+receiving "CHANGE STATE" command FSM moves to WAIT state (1).
+### WAIT ###
+In this state module is waiting for new packet on AXI-Stream line. You cannot access
+window registers (address x0000-[(FFT_SIZE-1)*4]) in this state. Reception of a new 
+AXIS packet moves FSM to BUSY state (2), otherwise "CHANGE STATE" command moves FSM 
+to IDLE (3).
+### BUSY ###
+In BUSY state module handles packet. You also cannot access window registers (address 
+x0000-[(FFT_SIZE-1)*4]). After reception of TLAST FSM goes either to the IDLE state (4),
+if one-packet mode is enabled, or to WAIT state (5), otherwise.
 	              
 */
 module window_func
