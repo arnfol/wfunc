@@ -5,7 +5,7 @@
 # working library
 set worklib work
 
-set top_lvl window_func
+set top_lvl window_func_tb
 
 # VHDL and Verilog file extensions
 set vhd_ext {vhd vhdl}
@@ -92,7 +92,7 @@ view signals
 view wave
 
 # signals
-# do "${default_path}wave.do"
+do "${default_path}wave.do"
 
 # run
 run -all

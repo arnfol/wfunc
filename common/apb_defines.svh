@@ -106,3 +106,10 @@ endtask\
 task apb_read ([31:0] addr, bit display=0);\
 	apb_trans_delayed(addr,,,display,);\
 endtask
+
+`define APB_MST_RST(eq) \
+paddr   ``eq '0;\
+psel    ``eq '0;\
+penable ``eq '0;\
+pwrite  ``eq '0;\
+pwdata  ``eq '0;

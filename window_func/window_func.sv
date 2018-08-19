@@ -40,8 +40,8 @@ Registers are given in a following format:
 
 | BITS       | ACCESS  | RST VALUE  | DESCRIPTION                     |
 |------------|---------|------------|---------------------------------|
-| 31-16      |  RW     |  x0000     | Imaginary part of window sample |
-| 15-0       |  RW     |  x0000     | Real part of window sample      |
+| 31-16      |  RW     |  xXXXX     | Imaginary part of window sample |
+| 15-0       |  RW     |  xXXXX     | Real part of window sample      |
 
 **Note:** If parameter APB_A_REV=1, address of these registers is bit-reverted.
 For instance, if FFT_SIZE=8192 and you are writing to address x0004, you will 
@@ -80,7 +80,7 @@ or command.
 ## State description ##
 **Note:** In any state write 1 to FSM reset register puts FSM into IDLE state.
 ### IDLE ###
-In this state module do nothing. You can access and configure all registers. After
+In this state module does nothing. You can access and configure all registers. After
 receiving "CHANGE STATE" command FSM moves to WAIT state (1).
 ### WAIT ###
 In this state module is waiting for new packet on AXI-Stream line. You cannot access
