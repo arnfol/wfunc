@@ -123,10 +123,10 @@ module window_func
 	output logic [      31:0] prdata
 );
 
-	function logic [APB_AW-1:0] bit_rev(logic [APB_AW-1:0] in);
-		logic [APB_AW-1:0] out;
+	function logic [APB_AW-2:2] bit_rev(logic [APB_AW-2:2] in);
+		logic [APB_AW-2:2] out;
 
-		for (int i = 0; i < APB_AW; i++) begin
+		for (int i = 2; i < APB_AW-1; i++) begin
 			out[i] = in[APB_AW-i];
 		end
 
@@ -204,10 +204,10 @@ module window_func
 					mem_wdata[i] = pwdata;
 				end
 				mem_write = pwrite;
-				mem_addr  = fsm_addr[MEM_AW-1:0];
-				mem_cs[fsm_addr[APB_AW-1:MEM_AW]]   = psel & !penable;
+				mem_addr  = fsm_addr[MEM_AW+1:2];
+				mem_cs[fsm_addr[APB_AW-2:MEM_AW+2]]   = psel & !penable;
 
-				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-1:MEM_AW]];
+				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-2:MEM_AW+2]];
 
 				nxt_state = (change_state) ? WAIT : IDLE;
 			end

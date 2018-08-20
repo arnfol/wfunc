@@ -38,6 +38,7 @@ module window_func_tb ();
 	localparam FFT_SIZE = 8192;
 	localparam BUS_NUM = 2;
 	localparam APB_A_REV = 1;
+	localparam WINDOW_FILENAME = "../../src/window_func/tb/window.txt";
 
 
 	logic in_tlast;
@@ -84,7 +85,11 @@ module window_func_tb ();
 
 		reset(1);
 		$display("%t : %-9s : Check APB reg types", $time, "TEST 2");
-		test1();
+		test2();
+
+		reset(1);
+		$display("%t : %-9s : Check APB reg initalization", $time, "TEST 3");
+		test3();
 
 		repeat(10) @(posedge clk);
 		$display("%t : %-9s : Test complete.", $time, "MAIN");
@@ -127,7 +132,7 @@ module window_func_tb ();
 
 			apb_write(i<<2,data,verbose);
 			apb_read(i<<2,verbose);
-			assert(prdata === data);
+			assert(prdata == data);
 		end
 
 		apb_write(FFT_SIZE<<2,'hFFFF_FFFF,verbose);
@@ -143,6 +148,24 @@ module window_func_tb ();
 		assert(prdata == 32'd0);
 
 	endtask : test2	
+
+	task test3();
+		window_init();
+		repeat(10) apb_read($urandom_range(FFT_SIZE)<<2,1);
+	endtask : test3
+
+	/*------------------------------------------------------------------------------
+	--  Common tasks
+	------------------------------------------------------------------------------*/
+	task window_init();
+		int mem[FFT_SIZE];
+
+		$readmemh(WINDOW_FILENAME,mem);
+
+		for (int i = 0; i < FFT_SIZE; i++) begin
+			apb_write(i<<2,mem[i]);
+		end
+	endtask : window_init
 
 	/*------------------------------------------------------------------------------
 	--  DUT
