@@ -46,7 +46,7 @@ module window_func_tb ();
 	sample_t_int in_tdata[BUS_NUM];
 
 	logic out_tlast;
-	sample_t_int out_tdata[BUS_NUM];
+	sample_t out_tdata[BUS_NUM];
 
 	int tr_rd_num;
 	int tr_wr_num;
@@ -209,7 +209,7 @@ module window_func_tb ();
 
 	task write_axis();
 		int wfile;
-		logic [BUS_NUM-1:0][31:0] data;
+		logic [BUS_NUM-1:0][63:0] data;
 
 		wfile = $fopen(AXIS_O_FILE,"w");
 
@@ -221,8 +221,7 @@ module window_func_tb ();
 			if(out_tvalid & out_tready) begin 
 				tr_wr_num++;
 				foreach(data[i]) begin
-					data[i][31:16] = out_tdata[i].im;
-					data[i][15: 0] = out_tdata[i].re;
+					data[i] = {out_tdata[i].im,out_tdata[i].re};
 				end
 				$fdisplay(wfile,"%b_%h",out_tlast,data);
 			end

@@ -113,7 +113,7 @@ module window_func
 	output logic              out_tvalid         ,
 	input                     out_tready         ,
 	output logic              out_tlast          ,
-	output sample_t_int       out_tdata [BUS_NUM],
+	output sample_t           out_tdata [BUS_NUM],
 	// APB bus
 	input                     psel               ,
 	input        [APB_AW-1:0] paddr              ,
@@ -167,6 +167,7 @@ module window_func
 	logic soft_rst;
 	logic change_state;
 
+	logic [MATH_DELAY:0] tlast_delay;
 
 	/*------------------------------------------------------------------------------
 	--  MEM
@@ -305,6 +306,18 @@ module window_func
 		);
 
 	end endgenerate
+
+
+	// tlast delay line
+	always_ff @(posedge clk or negedge rst_n) begin : proc_tlast_delay
+		if(~rst_n) begin
+			tlast_delay <= '0;
+		end else if(data_line_en) begin
+			tlast_delay <= {tlast_delay[MATH_DELAY-1:0],in_tlast};
+		end
+	end
+
+	assign out_tlast = tlast_delay[MATH_DELAY];
 
 	/*------------------------------------------------------------------------------
 	--  APB CONTROL REGS

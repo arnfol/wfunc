@@ -39,10 +39,10 @@ module complex_int_mult
     input               en   ,
     input  sample_t_int a    , // input 1
     input  sample_t_int b    , // input 2
-    output sample_t_int z      // result
+    output sample_t     z      // result
 );
 
-    sample_t_int z_reg[PIPE_NUM]; // not pipelined result
+    sample_t z_reg[PIPE_NUM]; // not pipelined result
 
     // pipeline
     always_ff @(posedge clk or negedge rst_n) begin : proc_z_reg
