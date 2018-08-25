@@ -30,17 +30,17 @@
 */
 package axis_pkg;
 
-	typedef struct {
+	typedef struct packed {
 		logic [31:0] re;
 		logic [31:0] im;
 	} sample_t;
 
-    typedef struct {
+    typedef struct packed {
         logic signed  [15:0] re;
         logic signed  [15:0] im;
     } sample_t_int;
 
-	typedef struct {
+	typedef struct packed {
 		sample_t tdata;
 		logic    tlast;
 	} axis_t;

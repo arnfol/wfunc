@@ -38,14 +38,18 @@ module window_func_tb ();
 	localparam FFT_SIZE = 8192;
 	localparam BUS_NUM = 2;
 	localparam APB_A_REV = 1;
-	localparam WINDOW_FILENAME = "../../src/window_func/tb/window.txt";
-
+	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
+	localparam AXIS_I_FILE = "../../src/window_func/tb/axis_i.txt";
+	localparam AXIS_O_FILE = "../../src/window_func/tb/axis_o.txt";
 
 	logic in_tlast;
 	sample_t_int in_tdata[BUS_NUM];
 
 	logic out_tlast;
 	sample_t_int out_tdata[BUS_NUM];
+
+	int tr_rd_num;
+	int tr_wr_num;
 
 	/*------------------------------------------------------------------------------
 	--  Clock
@@ -79,13 +83,13 @@ module window_func_tb ();
 	--  Main
 	------------------------------------------------------------------------------*/
 	initial begin
-		reset(1);
-		$display("%t : %-9s : Check initial APB values", $time, "TEST 1");
-		test1();
+		// reset(1);
+		// $display("%t : %-9s : Check initial APB values", $time, "TEST 1");
+		// test1();
 
-		reset(1);
-		$display("%t : %-9s : Check APB reg types", $time, "TEST 2");
-		test2();
+		// reset(1);
+		// $display("%t : %-9s : Check APB reg types", $time, "TEST 2");
+		// test2();
 
 		reset(1);
 		$display("%t : %-9s : Check APB reg initalization", $time, "TEST 3");
@@ -151,21 +155,79 @@ module window_func_tb ();
 
 	task test3();
 		window_init();
-		repeat(10) apb_read($urandom_range(FFT_SIZE)<<2,1);
+		apb_write(FFT_SIZE<<2,'h0000_0100);
+		fork
+			read_axis();
+			write_axis();
+		join_any
+		do @(posedge clk); while(tr_wr_num != tr_rd_num);
 	endtask : test3
 
 	/*------------------------------------------------------------------------------
 	--  Common tasks
 	------------------------------------------------------------------------------*/
-	task window_init();
+	task window_init(bit verbose=0);
 		int mem[FFT_SIZE];
 
-		$readmemh(WINDOW_FILENAME,mem);
+		$readmemh(WINDOW_FILE,mem);
 
 		for (int i = 0; i < FFT_SIZE; i++) begin
-			apb_write(i<<2,mem[i]);
+			apb_write(i<<2,mem[i],verbose);
 		end
 	endtask : window_init
+
+	task read_axis();
+		/* 
+		Reads input from file and runs AXIS trunsactions.
+		File format: <tlast(1b)>_<tdata(hex with "_")>
+		Example:    0_f12dc8ca_1d337a3e
+		            0_459a4094_067b682d
+		            0_c7c57277_6063554d
+		            0_faf037fb_a7e5f604
+		            1_bc4c0c39_45bfc902
+		*/
+		int rfile;
+		bit last;
+		logic [BUS_NUM-1:0][31:0] data;
+		axis_t dump;
+
+		rfile = $fopen(AXIS_I_FILE,"r");
+		while(!$feof(rfile)) begin 
+			tr_rd_num++;
+			$fscanf(rfile,"%1b_%h\n",last,data);
+			// $display("%t : %-9s : data: %h", $time, "TEMP", data);
+			// $display("%t : %-9s : last: %b", $time, "TEMP", last);
+			foreach(data[i]) begin
+				in_tdata[i].re <= data[i][15:0];
+				in_tdata[i].im <= data[i][31:16];
+			end
+			in_tlast <= last;
+			in_send(dump);
+		end
+		$fclose(rfile);
+	endtask : read_axis
+
+	task write_axis();
+		int wfile;
+		logic [BUS_NUM-1:0][31:0] data;
+
+		wfile = $fopen(AXIS_O_FILE,"w");
+
+		fork
+			forever out_get(10,1);
+		join_none
+
+		forever @(posedge clk) begin 
+			if(out_tvalid & out_tready) begin 
+				tr_wr_num++;
+				foreach(data[i]) begin
+					data[i][31:16] = out_tdata[i].im;
+					data[i][15: 0] = out_tdata[i].re;
+				end
+				$fdisplay(wfile,"%b_%h",out_tlast,data);
+			end
+		end
+	endtask : write_axis
 
 	/*------------------------------------------------------------------------------
 	--  DUT

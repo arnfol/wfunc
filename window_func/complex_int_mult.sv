@@ -59,6 +59,6 @@ module complex_int_mult
         end
     end
 
-    assign z = z_reg[PIPE_NUM];
+    assign z = z_reg[PIPE_NUM-1];
 
 endmodule

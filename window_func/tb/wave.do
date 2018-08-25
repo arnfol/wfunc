@@ -2,14 +2,21 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /window_func_tb/clk
 add wave -noupdate /window_func_tb/rst_n
-add wave -noupdate /window_func_tb/pclk
-add wave -noupdate /window_func_tb/psel
-add wave -noupdate /window_func_tb/penable
-add wave -noupdate /window_func_tb/pready
-add wave -noupdate /window_func_tb/pwrite
-add wave -noupdate -radix hexadecimal /window_func_tb/paddr
-add wave -noupdate /window_func_tb/prdata
-add wave -noupdate /window_func_tb/pwdata
+add wave -noupdate -expand -group apb /window_func_tb/psel
+add wave -noupdate -expand -group apb /window_func_tb/penable
+add wave -noupdate -expand -group apb /window_func_tb/pready
+add wave -noupdate -expand -group apb /window_func_tb/pwrite
+add wave -noupdate -expand -group apb -radix hexadecimal /window_func_tb/paddr
+add wave -noupdate -expand -group apb /window_func_tb/prdata
+add wave -noupdate -expand -group apb /window_func_tb/pwdata
+add wave -noupdate -expand -group in /window_func_tb/in_tdata
+add wave -noupdate -expand -group in /window_func_tb/in_tlast
+add wave -noupdate -expand -group in /window_func_tb/in_tready
+add wave -noupdate -expand -group in /window_func_tb/in_tvalid
+add wave -noupdate -expand -group out /window_func_tb/out_tdata
+add wave -noupdate -expand -group out /window_func_tb/out_tlast
+add wave -noupdate -expand -group out /window_func_tb/out_tready
+add wave -noupdate -expand -group out /window_func_tb/out_tvalid
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {311226221 ps} 0}
 quietly wave cursor active 1
@@ -27,4 +34,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {311021732 ps} {311340962 ps}
+WaveRestoreZoom {1999691732 ps} {2000010962 ps}
