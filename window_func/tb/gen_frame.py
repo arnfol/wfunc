@@ -42,11 +42,23 @@ def genWindow(size, file="window.txt"):
 
 	return window
 
-def genReference(outDataList,file="axis_o_check.txt"):
+def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 	with open(file,"w+") as f:
 		for l in outDataList:
-			for i in l:
-				f.write("{0:1b}_{1:08x}{2:08x}\n".format((i==l[-1]),hexp(i.real,32),hexp(i.imag,32)))
+			ltmp = l.copy()
+			while len(ltmp) > busNum:
+				f.write("0_")
+				for b in range(busNum):
+					transPart = ltmp.pop(0)
+					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
+				f.write("\n")
+			else:
+				f.write("1_")
+				for b in range(busNum):
+					transPart = ltmp.pop(0)
+					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
+				f.write("\n")
+
 
 def readPacket(busNum=2, file="axis_i.txt"):
 	packetList = []
@@ -70,9 +82,6 @@ def readPacket(busNum=2, file="axis_i.txt"):
 				raise ValueError('Unexpected value %s in TLAST position, should be 1 or 0.' % last)
 	return packetList
 
-
-# print(hex(hexp(-10)))
-# print("{0:04x}".format(hexp(-10)))
 
 packetSize = 8
 inp = genInput(packetSize,4)
