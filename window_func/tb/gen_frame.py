@@ -2,12 +2,14 @@ import random
 import re
 
 def randComplex():
-	im = random.randrange(0,1<<16)
-	re = random.randrange(0,1<<16)
+	im = random.randrange(-1<<15,1<<15)
+	re = random.randrange(-1<<15,1<<15)
 	return complex(re,im)
 
+def hexp(a,bits=16):
+	return (int(a) & (2**bits - 1))
 
-def genFile(size, packNum=1, busNum=2, file="axis_i.txt"):
+def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 	transNum = int(size/busNum)
 	packetList = []
 	with open(file,"w+") as f:
@@ -21,7 +23,7 @@ def genFile(size, packNum=1, busNum=2, file="axis_i.txt"):
 				for b in range(busNum):
 					data = randComplex()
 					packet.append(data)
-					f.write("_{0:0{2}x}{1:0{2}x}".format(int(data.real),int(data.imag),4))
+					f.write("_{0:04x}{1:04x}".format(hexp(data.real),hexp(data.imag)))
 				f.write("\n")
 
 			# add packet to list
@@ -36,9 +38,15 @@ def genWindow(size, file="window.txt"):
 		for i in range(size):
 			data = randComplex()
 			window.append(data)
-			f.write("{0:0{2}x}{1:0{2}x}\n".format(int(data.real),int(data.imag),4))
+			f.write("{0:04x}{1:04x}\n".format(hexp(data.real),hexp(data.imag)))
 
 	return window
+
+def genReference(outDataList,file="axis_o_check.txt"):
+	with open(file,"w+") as f:
+		for l in outDataList:
+			for i in l:
+				f.write("{0:1b}_{1:08x}{2:08x}\n".format((i==l[-1]),hexp(i.real,32),hexp(i.imag,32)))
 
 def readPacket(busNum=2, file="axis_i.txt"):
 	packetList = []
@@ -63,8 +71,11 @@ def readPacket(busNum=2, file="axis_i.txt"):
 	return packetList
 
 
+# print(hex(hexp(-10)))
+# print("{0:04x}".format(hexp(-10)))
+
 packetSize = 8
-inp = genFile(packetSize,4)
+inp = genInput(packetSize,4)
 print(inp)
 win = genWindow(packetSize)
 print(win)
@@ -76,4 +87,5 @@ for p in inp:
 		rp.append(p[i]*win[i])
 	result.append(rp)
 
+genReference(result)
 print(result)
