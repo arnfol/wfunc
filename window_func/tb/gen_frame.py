@@ -1,5 +1,7 @@
 import random
 import re
+import subprocess, os
+import filecmp
 
 def randComplex():
 	im = random.randrange(-1<<15,1<<15)
@@ -31,7 +33,6 @@ def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 
 	return packetList
 
-
 def genWindow(size, file="window.txt"):
 	window = []
 	with open(file,"w+") as f:
@@ -59,7 +60,6 @@ def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
 				f.write("\n")
 
-
 def readPacket(busNum=2, file="axis_i.txt"):
 	packetList = []
 	packet = []
@@ -82,12 +82,14 @@ def readPacket(busNum=2, file="axis_i.txt"):
 				raise ValueError('Unexpected value %s in TLAST position, should be 1 or 0.' % last)
 	return packetList
 
-
+# --------------------------------------------------------------
+# main
+# --------------------------------------------------------------
 packetSize = 8
 inp = genInput(packetSize,4)
-print(inp)
+# print(inp)
 win = genWindow(packetSize)
-print(win)
+# print(win)
 
 result = []
 for p in inp:
@@ -97,4 +99,12 @@ for p in inp:
 	result.append(rp)
 
 genReference(result)
-print(result)
+# print(result)
+
+subprocess.Popen("cd ../../../sim/modelsim && \
+	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do ../../src/window_func/tb/run.tcl > /dev/null",shell=True)
+
+if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
+	print('Success!!')
+else:
+	print('Files do not match!')
