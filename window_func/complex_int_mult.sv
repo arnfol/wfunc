@@ -32,7 +32,8 @@
 module complex_int_mult
     import axis_pkg::*;
 #(
-    PIPE_NUM = 10
+    PIPE_NUM = 10,
+    DISPLNUM = 0
 ) (
     input               clk  ,
     input               rst_n,
@@ -58,6 +59,16 @@ module complex_int_mult
             end 
         end
     end
+
+    // translate_off
+    always @(posedge clk) begin 
+        if(en) begin
+            $display("%t : MULT%2d : (%d + %dj)*(%d + %dj)=(%d + %dj) // (%h + %hj)",
+            $time, DISPLNUM, a.re, a.im, b.re, b.im, (a.re*b.re - a.im*b.im), (a.re*b.im + a.im*b.re), (a.re*b.re - a.im*b.im), (a.re*b.im + a.im*b.re));
+        end
+    end
+    // translate_on
+
 
     assign z = z_reg[PIPE_NUM-1];
 

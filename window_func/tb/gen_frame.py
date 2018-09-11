@@ -11,6 +11,13 @@ def randComplex():
 def hexp(a,bits=16):
 	return (int(a) & (2**bits - 1))
 
+def htoi(h):
+	x = int(h,16)
+	if x > 0x7FFFFFFF:
+	    x -= 0x100000000
+
+	return x
+
 def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 	transNum = int(size/busNum)
 	packetList = []
@@ -60,7 +67,7 @@ def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
 				f.write("\n")
 
-def readPacket(busNum=2, file="axis_i.txt"):
+def readPacket(busNum=2, file="axis_o.txt"):
 	packetList = []
 	packet = []
 	p = 0
@@ -70,7 +77,7 @@ def readPacket(busNum=2, file="axis_i.txt"):
 
 			# get new values
 			last = line[0]
-			packet.extend([int(i,16) for i in re.findall("([0-9a-fA-F]{8})",line[1:])])
+			packet.extend([htoi(i) for i in re.findall("([0-9a-fA-F]{8})",line[1:])])
 
 			# check TLAST
 			if(int(last) == 1):
@@ -85,11 +92,11 @@ def readPacket(busNum=2, file="axis_i.txt"):
 # --------------------------------------------------------------
 # main
 # --------------------------------------------------------------
-packetSize = 8
+packetSize = 32
 inp = genInput(packetSize,4)
-# print(inp)
+print(inp)
 win = genWindow(packetSize)
-# print(win)
+print(win)
 
 result = []
 for p in inp:
@@ -99,12 +106,15 @@ for p in inp:
 	result.append(rp)
 
 genReference(result)
-# print(result)
+print(result)
 
 subprocess.Popen("cd ../../../sim/modelsim && \
 	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do ../../src/window_func/tb/run.tcl > /dev/null",shell=True)
+
+# print(readPacket(file='axis_o.txt'))
 
 if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
 	print('Success!!')
 else:
 	print('Files do not match!')
+

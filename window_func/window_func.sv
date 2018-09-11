@@ -27,8 +27,8 @@ Project     : FFT_CORE
 Author      : Konovalov Vitaliy 
 Description : 
 					
-Description below is in markdown format, you can use editor to get pretty view.
-To make this document we use typora editor.
+Description below is in a markdown format, so you can use an editor to get a pretty view.
+To make this document we used TYPORA.
 
 # APB registers map #
 
@@ -67,7 +67,7 @@ packets after FFT.
 | 0          |  RW     |  x0        | 1 enables FSM one-packet mode.                     |
 
 **Note:** One-packet mode force FSM moving to the IDLE state after handling one packet.
-If not set, after handling packet FSM goes to the WAIT state and wait for another packet
+If not set, after handling a packet FSM goes to the WAIT state and waits for another packet
 or command.
 
 # FSM #
@@ -99,7 +99,7 @@ module window_func
 	FFT_SIZE  = 8192                      , // should be power of 2
 	BUS_NUM   = 2                         , // should be >= 2
 	APB_A_REV = 1                         , // either do bit revert on APB address (1) or not (0)
-	MEM_AW    = $clog2(FFT_SIZE/BUS_NUM-1),
+	MEM_AW    = $clog2((FFT_SIZE/BUS_NUM)-1),
 	APB_AW    = $clog2(FFT_SIZE-1)+2+1      // +2 for LSB in addr for potential byte access, +1 for control regs
 ) (
 	input                     clk                ,
@@ -172,7 +172,7 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  MEM
 	------------------------------------------------------------------------------*/
-	generate for (genvar i = 0; i < BUS_NUM; i++) begin
+	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mem_gen
 		spram #(.DW(32), .AW(MEM_AW)) u_spram (
 			.clk (clk           ),
 			.data(mem_wdata[i]),
@@ -206,7 +206,7 @@ module window_func
 				end
 				mem_write = pwrite;
 				mem_addr  = fsm_addr[MEM_AW+1:2];
-				mem_cs[fsm_addr[APB_AW-2:MEM_AW+2]]   = psel & !penable;
+				mem_cs[fsm_addr[APB_AW-2:MEM_AW+2]] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
 
 				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-2:MEM_AW+2]];
 
@@ -279,7 +279,7 @@ module window_func
 
 
 	// math
-	generate for (genvar i = 0; i < BUS_NUM; i++) begin
+	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mult_gen
 				
 		sample_t_int a;
 		sample_t_int b;
@@ -296,7 +296,7 @@ module window_func
 			end
 		end
 
-		complex_int_mult #(.PIPE_NUM(MATH_DELAY)) u_complex_int_mult (
+		complex_int_mult #(.PIPE_NUM(MATH_DELAY), .DISPLNUM(i)) u_complex_int_mult (
 			.clk  (clk         ),
 			.rst_n(rst_n       ),
 			.en   (data_line_en),

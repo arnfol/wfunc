@@ -35,9 +35,9 @@ module window_func_tb ();
 
 	import axis_pkg::*;
 
-	localparam FFT_SIZE = 8192;
+	localparam FFT_SIZE = 32;
 	localparam BUS_NUM = 2;
-	localparam APB_A_REV = 1;
+	localparam APB_A_REV = 0;
 	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
 	localparam AXIS_I_FILE = "../../src/window_func/tb/axis_i.txt";
 	localparam AXIS_O_FILE = "../../src/window_func/tb/axis_o.txt";
