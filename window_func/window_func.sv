@@ -205,8 +205,8 @@ module window_func
 					mem_wdata[i] = pwdata;
 				end
 				mem_write = pwrite;
-				mem_addr  = fsm_addr[MEM_AW+1:2];
-				mem_cs[fsm_addr[APB_AW-2:MEM_AW+2]] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
+				mem_addr  = fsm_addr >> $clog2(BUS_NUM);
+				mem_cs[fsm_addr[$clog2(BUS_NUM)+1:2]] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
 
 				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-2:MEM_AW+2]];
 
