@@ -58,13 +58,13 @@ def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 				f.write("0_")
 				for b in range(busNum):
 					transPart = ltmp.pop(0)
-					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
+					f.write("{0:08x}{1:08x}".format(hexp(transPart.imag,32),hexp(transPart.real,32)))
 				f.write("\n")
 			else:
 				f.write("1_")
 				for b in range(busNum):
 					transPart = ltmp.pop(0)
-					f.write("{0:08x}{1:08x}".format(hexp(transPart.real,32),hexp(transPart.imag,32)))
+					f.write("{0:08x}{1:08x}".format(hexp(transPart.imag,32),hexp(transPart.real,32)))
 				f.write("\n")
 
 def readPacket(busNum=2, file="axis_o.txt"):
@@ -93,20 +93,20 @@ def readPacket(busNum=2, file="axis_o.txt"):
 # main
 # --------------------------------------------------------------
 packetSize = 32
-inp = genInput(packetSize,4)
-print(inp)
+inp = genInput(packetSize,1)
 win = genWindow(packetSize)
-print(win)
+
+print('data * window = result')
 
 result = []
 for p in inp:
 	rp = []
 	for i in range(len(p)):
 		rp.append(p[i]*win[i])
+		print(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]))
 	result.append(rp)
 
 genReference(result)
-print(result)
 
 subprocess.Popen("cd ../../../sim/modelsim && \
 	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do ../../src/window_func/tb/run.tcl > /dev/null",shell=True)

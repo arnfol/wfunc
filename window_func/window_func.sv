@@ -129,7 +129,7 @@ module window_func
 		for (int i = 2; i < APB_AW-1; i++) begin
 			out[i] = in[APB_AW-i];
 		end
-
+		out = out ^ ~(1<<APB_AW-3); // invert all bits except the MSB
 		return out;
 	endfunction : bit_rev
 
@@ -141,7 +141,8 @@ module window_func
 
 	logic [MEM_AW-1:0] sample_cntr;
 
-	logic [APB_AW-2:2] fsm_addr;
+	logic [APB_AW-2:2]          fsm_addr;
+	logic [$clog2(BUS_NUM)-1:0] fsm_cs;
 
 	logic [MEM_AW-1:0]        mem_addr ;
 	logic                     mem_write;
@@ -186,7 +187,8 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  FSM
 	------------------------------------------------------------------------------*/
-	assign fsm_addr = (APB_A_REV) ? bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
+	assign fsm_addr = (APB_A_REV) ?  bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
+	assign fsm_cs   = (APB_A_REV) ? ~bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
 
 	always_comb begin : proc_fsm
 		mem_write = '0;
@@ -206,7 +208,7 @@ module window_func
 				end
 				mem_write = pwrite;
 				mem_addr  = fsm_addr >> $clog2(BUS_NUM);
-				mem_cs[fsm_addr[$clog2(BUS_NUM)+1:2]] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
+				mem_cs[fsm_cs] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
 
 				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-2:MEM_AW+2]];
 

@@ -36,7 +36,7 @@ module window_func_tb ();
 	import axis_pkg::*;
 
 	localparam FFT_SIZE = 32;
-	localparam BUS_NUM = 2;
+	localparam BUS_NUM  = 2;
 	localparam APB_A_REV = 0;
 	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
 	localparam AXIS_I_FILE = "../../src/window_func/tb/axis_i.txt";
@@ -195,11 +195,12 @@ module window_func_tb ();
 		while(!$feof(rfile)) begin 
 			tr_rd_num++;
 			$fscanf(rfile,"%1b_%h\n",last,data);
-			// $display("%t : %-9s : data: %h", $time, "TEMP", data);
-			// $display("%t : %-9s : last: %b", $time, "TEMP", last);
+			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
+			// $display("%t : %-9s : last: %b", $time, "DEBUG", last);
 			foreach(data[i]) begin
-				in_tdata[i].re <= data[i][15:0];
-				in_tdata[i].im <= data[i][31:16];
+				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
+				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
+				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
 			end
 			in_tlast <= last;
 			in_send(dump);
@@ -221,7 +222,7 @@ module window_func_tb ();
 			if(out_tvalid & out_tready) begin 
 				tr_wr_num++;
 				foreach(data[i]) begin
-					data[i] = {out_tdata[i].im,out_tdata[i].re};
+					data[i] = {out_tdata[BUS_NUM-1-i].im,out_tdata[BUS_NUM-1-i].re};
 				end
 				$fdisplay(wfile,"%b_%h",out_tlast,data);
 			end

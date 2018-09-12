@@ -32,8 +32,9 @@ add wave -noupdate -radix hexadecimal {/window_func_tb/u_window_func/mem_gen[0]/
 add wave -noupdate {/window_func_tb/u_window_func/mem_gen[0]/u_spram/we}
 add wave -noupdate -radix hexadecimal /window_func_tb/u_window_func/fsm_addr
 add wave -noupdate -radix hexadecimal /window_func_tb/u_window_func/paddr
+add wave -noupdate /window_func_tb/u_window_func/fsm_cs
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {961281 ps} 0}
+WaveRestoreCursors {{Cursor 1} {989082 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
@@ -49,4 +50,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {920471 ps} {1021625 ps}
+WaveRestoreZoom {0 ps} {1334608 ps}
