@@ -97,4 +97,4 @@ do "${default_path}wave.do"
 # run
 run -all
 
-# exit
+exit

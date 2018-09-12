@@ -215,7 +215,7 @@ module window_func_tb ();
 		wfile = $fopen(AXIS_O_FILE,"w");
 
 		fork
-			forever out_get(10,1);
+			forever out_get(0,0);
 		join_none
 
 		forever @(posedge clk) begin 

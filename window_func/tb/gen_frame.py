@@ -32,7 +32,7 @@ def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 				for b in range(busNum):
 					data = randComplex()
 					packet.append(data)
-					f.write("_{0:04x}{1:04x}".format(hexp(data.real),hexp(data.imag)))
+					f.write("_{0:04x}{1:04x}".format(hexp(data.imag),hexp(data.real)))
 				f.write("\n")
 
 			# add packet to list
@@ -46,7 +46,7 @@ def genWindow(size, file="window.txt"):
 		for i in range(size):
 			data = randComplex()
 			window.append(data)
-			f.write("{0:04x}{1:04x}\n".format(hexp(data.real),hexp(data.imag)))
+			f.write("{0:04x}{1:04x}\n".format(hexp(data.imag),hexp(data.real)))
 
 	return window
 
@@ -96,25 +96,28 @@ packetSize = 32
 inp = genInput(packetSize,1)
 win = genWindow(packetSize)
 
-print('data * window = result')
+f = open('check.log','w')
+
+f.write('data * window = result\n')
 
 result = []
 for p in inp:
 	rp = []
 	for i in range(len(p)):
 		rp.append(p[i]*win[i])
-		print(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]))
+		f.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]) + '\n')
 	result.append(rp)
 
 genReference(result)
 
-subprocess.Popen("cd ../../../sim/modelsim && \
+subprocess.call("cd ../../../sim/modelsim && \
 	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do ../../src/window_func/tb/run.tcl > /dev/null",shell=True)
 
-# print(readPacket(file='axis_o.txt'))
-
 if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
-	print('Success!!')
+	print('Check passed!')
+	f.write('Check passed!')
 else:
 	print('Files do not match!')
+	f.write('Files do not match!')
 
+f.close()

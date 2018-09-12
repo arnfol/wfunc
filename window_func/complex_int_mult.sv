@@ -61,6 +61,7 @@ module complex_int_mult
     end
 
     // translate_off
+    // // for debug
     // always @(posedge clk) begin 
     //     if(en) begin
     //         $display("%t : MULT%2d : (%d + %dj)*(%d + %dj)=(%d + %dj) // (%h + %hj)",
