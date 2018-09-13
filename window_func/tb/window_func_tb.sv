@@ -114,8 +114,10 @@ module window_func_tb ();
 	--  Tests' tasks
 	------------------------------------------------------------------------------*/
 	task test1(bit verbose=0);
+		/*
+			check initial values
+		*/
 
-		// check initial values
 		for(int i = 0; i < FFT_SIZE; i++) begin
 			apb_read(i<<2,verbose);
 			assert(prdata === 32'dx);
@@ -128,9 +130,12 @@ module window_func_tb ();
 	endtask : test1	
 
 	task test2(bit verbose=0);
+		/*
+			check apb regs
+		*/
+		
 		int data;
 
-		// check apb regs
 		for(int i = 0; i < FFT_SIZE; i++) begin
 			data = $urandom;
 

@@ -36,6 +36,9 @@ Registers are given in a following format:
 ## <ADDRESS> : <REG NAME> ##
 <DESCRIPTION>
 
+Each register is aligned to 32-bit word bounds, which means 2 least significant bits 
+of paddr bus should always be zeros.
+
 ## x0000 - [(FFT_SIZE-1)*4] : Window values ##
 
 | BITS       | ACCESS  | RST VALUE  | DESCRIPTION                     |
