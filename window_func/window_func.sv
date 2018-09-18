@@ -153,12 +153,13 @@ module window_func
 	logic [BUS_NUM-1:0][31:0] mem_rdata;
 	logic [BUS_NUM-1:0]       mem_cs   ;
 
-	logic [MATH_DELAY:0] tvalid_pipe;
-	logic                data_line_en;
+	logic [MATH_DELAY-1:0] tvalid_pipe;
+	logic [MATH_DELAY-1:0] tlast_pipe;
+	logic data_line_en;
+
 
 	localparam REGS_NUM = 2;
 	localparam [REGS_NUM-1:0][31:0] regs_rst = {32'd0,32'd0};
-
 	logic [REGS_NUM-1:0][31:0] wr_regs, wr_regs_del, rd_regs;
 
 	logic [APB_AW-4:0] reg_addr ;
@@ -171,21 +172,10 @@ module window_func
 	logic soft_rst;
 	logic change_state;
 
-	logic [MATH_DELAY:0] tlast_delay;
-
-	/*------------------------------------------------------------------------------
-	--  MEM
-	------------------------------------------------------------------------------*/
-	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mem_gen
-		spram #(.DW(32), .AW(MEM_AW)) u_spram (
-			.clk (clk           ),
-			.data(mem_wdata[i]),
-			.addr(mem_addr),
-			.we  (mem_write),
-			.cs  (mem_cs[i]),
-			.q   (mem_rdata[i])
-		);
-	end endgenerate
+	logic in_tlast_pipe, in_tlast_pipe_;
+	logic in_hshake_pipe, in_hshake_pipe_;
+	logic in_hshake;
+	sample_t_int in_tdata_pipe[BUS_NUM], in_tdata_pipe_[BUS_NUM];
 
 	/*------------------------------------------------------------------------------
 	--  FSM
@@ -199,13 +189,12 @@ module window_func
 		mem_cs    = '0;
 		mem_wdata = '0;
 		prdata    = reg_rdata;
+		in_tready = 0;
 
 		nxt_state = IDLE;
 
 		case (state)
 			IDLE : begin // APB access
-				in_tready = 0;
-
 				for (int i = 0; i < BUS_NUM; i++) begin
 					mem_wdata[i] = pwdata;
 				end
@@ -235,7 +224,7 @@ module window_func
 				mem_cs = '1;
 				mem_addr = sample_cntr;
 
-				if(in_tready & in_tvalid & in_tlast) begin 
+				if(data_line_en & in_hshake_pipe & in_tlast_pipe) begin 
 					nxt_state = (one_pack_mode) ? IDLE : WAIT;
 				end else begin 
 					nxt_state = BUSY;
@@ -258,30 +247,134 @@ module window_func
 		end
 	end
 
-	/*------------------------------------------------------------------------------
-	--  DATA LINE
-	------------------------------------------------------------------------------*/
-	// enables
-	assign data_line_en = out_tready | !out_tvalid;
 
-	always_ff @(posedge clk or negedge rst_n) begin : proc_tvalid_pipe
+	/*------------------------------------------------------------------------------
+	--  MEM for window
+	------------------------------------------------------------------------------*/
+	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mem_gen
+		spram #(.DW(32), .AW(MEM_AW)) u_spram (
+			.clk (clk           ),
+			.data(mem_wdata[i]),
+			.addr(mem_addr),
+			.we  (mem_write),
+			.cs  (mem_cs[i]),
+			.q   (mem_rdata[i])
+		);
+	end endgenerate
+
+	/*------------------------------------------------------------------------------
+	--  INPUT STAGE
+	------------------------------------------------------------------------------*/
+
+	assign in_hshake = in_tvalid & in_tready;
+
+	// input handshake pipeline for memory delay compensation
+	always_ff @(posedge clk or negedge rst_n) begin : proc_in_hshake_pipe1
 		if(~rst_n) begin
-			tvalid_pipe <= '0;
+			in_hshake_pipe_ <= 0;
 		end else if(data_line_en) begin
-			tvalid_pipe <= {tvalid_pipe[MATH_DELAY-1:0],in_tready&in_tvalid};
+			in_hshake_pipe_ <= in_hshake;
 		end
 	end
-	assign out_tvalid = tvalid_pipe[MATH_DELAY];
+
+	always_ff @(posedge clk or negedge rst_n) begin : proc_in_hshake_pipe2
+		if(~rst_n) begin
+			in_hshake_pipe <= 0;
+		end else begin
+			in_hshake_pipe <= in_hshake_pipe_;
+		end
+	end
+
+
+	// input data pipeline for memory delay compensation
+	always_ff @(posedge clk or negedge rst_n) begin : proc_in_stage1
+		if(~rst_n) begin
+			in_tlast_pipe_ <= 0;
+			for (int i = 0; i < BUS_NUM; i++) begin
+				in_tdata_pipe_[i] <= '{0,0};
+			end
+		end else if(in_hshake) begin
+			in_tlast_pipe_ <= in_tlast;
+			for (int i = 0; i < BUS_NUM; i++) begin
+				in_tdata_pipe_[i] <= in_tdata[i];
+			end
+		end
+	end
+
+	always_ff @(posedge clk or negedge rst_n) begin : proc_in_stage2
+		if(~rst_n) begin
+			in_tlast_pipe <= 0;
+			for (int i = 0; i < BUS_NUM; i++) begin
+				in_tdata_pipe[i] <= '{0,0};
+			end
+		end else begin
+			in_tlast_pipe <= in_tlast_pipe_;
+			for (int i = 0; i < BUS_NUM; i++) begin
+				in_tdata_pipe[i] <= in_tdata_pipe_[i];
+			end
+		end
+	end
 
 	// counter for memory
 	always_ff @(posedge clk or negedge rst_n) begin : proc_sample_cntr
 		if(~rst_n) begin
-			sample_cntr <= 0;
-		end else if(in_tready & in_tvalid) begin
+			sample_cntr <= '1;
+		end else if(in_hshake) begin
 			sample_cntr <= sample_cntr+1;
 		end
 	end
 
+	/*------------------------------------------------------------------------------
+	--  MATH DATA LINE
+	------------------------------------------------------------------------------*/
+	logic tvalid_save;
+	logic tlast_save;
+	logic save_trans;
+	logic data_line_en_del;
+	sample_t z[BUS_NUM];
+	sample_t z_del[BUS_NUM];
+
+	assign data_line_en = out_tready | !out_tvalid;
+
+	always_ff @(posedge clk or negedge rst_n) begin : proc_data_line_del
+		if(~rst_n) begin
+			data_line_en_del <= 0;
+		end else begin
+			data_line_en_del <= data_line_en;
+		end
+	end
+
+	assign save_trans = !out_tready & data_line_en_del & tvalid_pipe[MATH_DELAY-1];
+
+	// pipeline for math delay compensation
+	always_ff @(posedge clk or negedge rst_n) begin : proc_tvalid_pipe
+		if(~rst_n) begin
+			tvalid_pipe <= '0;
+			tlast_pipe  <= '0;
+		end else if(data_line_en_del) begin
+			tvalid_pipe <= {tvalid_pipe[MATH_DELAY-2:0],in_hshake_pipe};
+			tlast_pipe  <= {tlast_pipe[MATH_DELAY-2:0],in_tlast_pipe};
+		end
+	end
+
+	always_ff @(posedge clk or negedge rst_n) begin : proc_tvalid_save
+		if(~rst_n) begin
+			tvalid_save <= 0;
+			tlast_save  <= 0;
+		end else if(!tvalid_save | in_tready) begin
+			tvalid_save <= (save_trans) ? tvalid_pipe[MATH_DELAY-1] : 0;
+			tlast_save  <= (save_trans) ? tlast_pipe[MATH_DELAY-1] : 0;
+		end
+	end
+
+	// output mux
+	assign out_tvalid = (tvalid_save) ? tvalid_save : tvalid_pipe[MATH_DELAY-1];
+	assign out_tlast  = (tvalid_save) ? tlast_save  : tlast_pipe[MATH_DELAY-1];
+	always_comb begin : proc_out_tdata
+		for (int i = 0; i < BUS_NUM; i++) begin
+			out_tdata[i] = (tvalid_save) ? z_del[i] : z[i];
+		end
+	end
 
 	// math
 	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mult_gen
@@ -289,40 +382,28 @@ module window_func
 		sample_t_int a;
 		sample_t_int b;
 
+		assign a = in_tdata_pipe[i];
 		assign b.re = mem_rdata[i][15:0];
 		assign b.im = mem_rdata[i][31:16];
 
-		// additional delay to compensate memory delay
-		always_ff @(posedge clk or negedge rst_n) begin : proc_add_delay
+		complex_int_mult #(.PIPE_NUM(MATH_DELAY), .DISPLNUM(i)) u_complex_int_mult (
+			.clk  (clk             ),
+			.rst_n(rst_n           ),
+			.en   (data_line_en_del),
+			.a    (a               ),
+			.b    (b               ),
+			.z    (z[i]            )
+		);
+
+		always_ff @(posedge clk or negedge rst_n) begin : proc_z_del
 			if(~rst_n) begin
-				a <= '{0,0};
-			end else if(data_line_en) begin
-				a <= in_tdata[i];
+				z_del[i] <= '{0,0};
+			end else if(!tvalid_save | in_tready) begin
+				z_del[i] <= (save_trans) ? z[i] : '{0,0};
 			end
 		end
 
-		complex_int_mult #(.PIPE_NUM(MATH_DELAY), .DISPLNUM(i)) u_complex_int_mult (
-			.clk  (clk         ),
-			.rst_n(rst_n       ),
-			.en   (data_line_en),
-			.a    (a           ),
-			.b    (b           ),
-			.z    (out_tdata[i])
-		);
-
 	end endgenerate
-
-
-	// tlast delay line
-	always_ff @(posedge clk or negedge rst_n) begin : proc_tlast_delay
-		if(~rst_n) begin
-			tlast_delay <= '0;
-		end else if(data_line_en) begin
-			tlast_delay <= {tlast_delay[MATH_DELAY-1:0],in_tlast};
-		end
-	end
-
-	assign out_tlast = tlast_delay[MATH_DELAY];
 
 	/*------------------------------------------------------------------------------
 	--  APB CONTROL REGS

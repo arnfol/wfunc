@@ -92,14 +92,20 @@ def readPacket(busNum=2, file="axis_o.txt"):
 # --------------------------------------------------------------
 # main
 # --------------------------------------------------------------
-packetSize = 32
-inp = genInput(packetSize,1)
+
+# parameters
+packetSize = 64
+packetNum = 5
+# randInput = False
+# randOutput = False
+
+# generate input transactions
+inp = genInput(packetSize,packetNum)
 win = genWindow(packetSize)
 
+# generate reference result
 f = open('check.log','w')
-
 f.write('data * window = result\n')
-
 result = []
 for p in inp:
 	rp = []
@@ -110,9 +116,21 @@ for p in inp:
 
 genReference(result)
 
-subprocess.call("cd ../../../sim/modelsim && \
-	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do ../../src/window_func/tb/run.tcl > /dev/null",shell=True)
+# run vsim
+vsim = 'cd ../../../sim/modelsim && \
+/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c \
+-do ../../src/window_func/tb/run.tcl'
 
+# vsim += ' -g IN_RAND=1' if randInput else ' -g IN_RAND=0'
+# vsim += ' -g OUT_RAND=1' if randOutput else ' -g OUT_RAND=0'
+
+
+vsim = vsim + ' > ../../src/window_func/tb/vsim.log'
+print(vsim)
+subprocess.Popen('cat > axis_o.txt',shell=True) # delete old result
+subprocess.call(vsim,shell=True)
+
+# check results
 if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
 	print('Check passed!')
 	f.write('Check passed!')

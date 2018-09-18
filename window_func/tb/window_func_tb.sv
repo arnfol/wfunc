@@ -35,12 +35,17 @@ module window_func_tb ();
 
 	import axis_pkg::*;
 
-	localparam FFT_SIZE = 32;
-	localparam BUS_NUM  = 2;
-	localparam APB_A_REV = 0;
+	parameter FFT_SIZE = 64;
+	parameter BUS_NUM  = 2;
+	parameter APB_A_REV = 0;
+
 	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
 	localparam AXIS_I_FILE = "../../src/window_func/tb/axis_i.txt";
 	localparam AXIS_O_FILE = "../../src/window_func/tb/axis_o.txt";
+
+	parameter IN_RAND = 1;
+	parameter OUT_RAND = 1;
+	// initial $display("INRAND = %d, OUT RAND %d",IN_RAND,OUT_RAND);
 
 	logic in_tlast;
 	sample_t_int in_tdata[BUS_NUM];
@@ -60,7 +65,7 @@ module window_func_tb ();
 	always #5 clk = ~clk;
 
 	initial begin 
-		repeat(200000) @(posedge clk);
+		repeat(2000) @(posedge clk);
 		$display("%t : %-9s : %s", $time, "ERROR","Simulation terminated by timeout!");
 		$stop;
 	end
@@ -92,7 +97,7 @@ module window_func_tb ();
 		// test2();
 
 		reset(1);
-		$display("%t : %-9s : Check APB reg initalization", $time, "TEST 3");
+		$display("%t : %-9s : Check module work", $time, "TEST 3");
 		test3();
 
 		repeat(10) @(posedge clk);
@@ -208,6 +213,7 @@ module window_func_tb ();
 				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
 			end
 			in_tlast <= last;
+			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
 		end
 		$fclose(rfile);
@@ -215,12 +221,16 @@ module window_func_tb ();
 
 	task write_axis();
 		int wfile;
+		int cyc_wait;
 		logic [BUS_NUM-1:0][63:0] data;
 
 		wfile = $fopen(AXIS_O_FILE,"w");
 
 		fork
-			forever out_get(0,0);
+			forever begin 
+				cyc_wait = (OUT_RAND) ? $urandom_range(10) : 0;
+				out_get(cyc_wait,1);
+			end
 		join_none
 
 		forever @(posedge clk) begin 
