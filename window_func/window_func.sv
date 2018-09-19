@@ -51,7 +51,7 @@ For instance, if FFT_SIZE=8192 and you are writing to address x0004, you will
 access x4000 instead. This was done to simplify work with reverted-order 
 packets after FFT.
 
-## [FFT_SIZE*4] : Control register 1 ##
+## [FFT_SIZE*4] : Control register ##
 
 | BITS       | ACCESS  | RST VALUE  | DESCRIPTION                                        |
 |------------|---------|------------|----------------------------------------------------|
@@ -60,23 +60,17 @@ packets after FFT.
 | 7-1        |  RO     |  x00       | Unused                                             |
 | 0          |  WO     |  -         | FSM reset. Writing 1 puts FSM into IDLE state      |
 
-## [(FFT_SIZE+1)*4] : Status & Control register 2 ##
+## [(FFT_SIZE+1)*4] : Status register ##
 
 | BITS       | ACCESS  | RST VALUE  | DESCRIPTION                                        |
 |------------|---------|------------|----------------------------------------------------|
 | 31-10      |  RO     |  x000000   | Unused                                             |
 | 9-8        |  RO     |  x0        | FSM state. IDLE=x0, WAIT=x1, BUSY=x2.              |
-| 7-1        |  RO     |  x00       | Unused                                             |
-| 0          |  RW     |  x0        | 1 enables FSM one-packet mode.                     |
-
-**Note:** One-packet mode force FSM moving to the IDLE state after handling one packet.
-If not set, after handling a packet FSM goes to the WAIT state and waits for another packet
-or command.
+| 7-0        |  RO     |  x00       | Unused                                             |
 
 # FSM #
 ## State diagram ##
 
-	                         -4-> IDLE
 	IDLE -1-> WAIT -2-> BUSY -5-> WAIT
 	               -3-> IDLE
 
@@ -92,8 +86,7 @@ AXIS packet moves FSM to BUSY state (2), otherwise "CHANGE STATE" command moves 
 to IDLE (3).
 ### BUSY ###
 In BUSY state module handles packet. You also cannot access window registers (address 
-x0000-[(FFT_SIZE-1)*4]). After reception of TLAST FSM goes either to the IDLE state (4),
-if one-packet mode is enabled, or to WAIT state (5), otherwise.
+x0000-[(FFT_SIZE-1)*4]). After reception of TLAST FSM goes  to WAIT state (5).
 	              
 */
 module window_func
@@ -168,7 +161,6 @@ module window_func
 	logic [      31:0] reg_rdata;
 	logic              reg_en   ;
 
-	logic one_pack_mode;
 	logic soft_rst;
 	logic change_state;
 
@@ -225,7 +217,7 @@ module window_func
 				mem_addr = sample_cntr;
 
 				if(data_line_en & in_hshake_pipe & in_tlast_pipe) begin 
-					nxt_state = (one_pack_mode) ? IDLE : WAIT;
+					nxt_state = WAIT;
 				end else begin 
 					nxt_state = BUSY;
 				end
@@ -426,9 +418,6 @@ module window_func
 
 	always_comb begin 
 		rd_regs = regs_rst;
-
-		one_pack_mode = wr_regs[1][0];
-		rd_regs[1][0] = one_pack_mode;
 
 		rd_regs[1][9:8] = state;
 	end
