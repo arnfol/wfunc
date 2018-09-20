@@ -45,7 +45,6 @@ module window_func_tb ();
 
 	parameter IN_RAND = 1;
 	parameter OUT_RAND = 1;
-	// initial $display("INRAND = %d, OUT RAND %d",IN_RAND,OUT_RAND);
 
 	logic in_tlast;
 	sample_t_int in_tdata[BUS_NUM];
@@ -56,6 +55,10 @@ module window_func_tb ();
 	int tr_rd_num;
 	int tr_wr_num;
 
+	initial begin
+		$display("%-9s : FFT_SIZE=%0d, BUS_NUM=%0d, APB_A_REV=%0d ", "CONFIG", FFT_SIZE, BUS_NUM, APB_A_REV);
+		$display("%-9s : IN_RAND=%0d, OUT_RAND=%0d ", "CONFIG", IN_RAND, OUT_RAND);
+	end
 	/*------------------------------------------------------------------------------
 	--  Clock
 	------------------------------------------------------------------------------*/

@@ -26,8 +26,6 @@ add wave -noupdate -expand -group mult -radix decimal {/window_func_tb/u_window_
 add wave -noupdate -expand -group mult -radix decimal -childformat {{{/window_func_tb/u_window_func/mult_gen[1]/u_complex_int_mult/z_reg[0].re} -radix decimal} {{/window_func_tb/u_window_func/mult_gen[1]/u_complex_int_mult/z_reg[0].im} -radix decimal}} -subitemconfig {{/window_func_tb/u_window_func/mult_gen[1]/u_complex_int_mult/z_reg[0].re} {-height 16 -radix decimal} {/window_func_tb/u_window_func/mult_gen[1]/u_complex_int_mult/z_reg[0].im} {-height 16 -radix decimal}} {/window_func_tb/u_window_func/mult_gen[1]/u_complex_int_mult/z_reg[0]}
 add wave -noupdate -expand -group mult {/window_func_tb/u_window_func/tvalid_pipe[0]}
 add wave -noupdate -expand -group mult {/window_func_tb/u_window_func/tlast_pipe[0]}
-add wave -noupdate -expand -group mult {/window_func_tb/u_window_func/tvalid_pipe[10]}
-add wave -noupdate -expand -group mult {/window_func_tb/u_window_func/tlast_pipe[10]}
 add wave -noupdate -group mem {/window_func_tb/u_window_func/mem_gen[0]/u_spram/addr}
 add wave -noupdate -group mem {/window_func_tb/u_window_func/mem_gen[0]/u_spram/clk}
 add wave -noupdate -group mem {/window_func_tb/u_window_func/mem_gen[0]/u_spram/cs}

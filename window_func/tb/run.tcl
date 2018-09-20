@@ -84,7 +84,19 @@ run_from "sim_list.txt"
 # simulate
 # -------------------------------------------------------------------
 
-vsim $top_lvl
+# rewrite parameters if script line argument specified
+if {$argc > 0} {
+    set fftsize [lindex [lindex $argv end] end-4]
+    set busnum [lindex [lindex $argv end] end-3]
+    set revertaddr [lindex [lindex $argv end] end-2]
+    set inrand [lindex [lindex $argv end] end-1]
+    set outrand [lindex [lindex $argv end] end]
+    vsim $top_lvl -GIN_RAND=${inrand} -GOUT_RAND=${outrand} \
+    -GFFT_SIZE=${fftsize} -GBUS_NUM=${busnum} -GAPB_A_REV=${revertaddr}
+} else {
+    vsim $top_lvl
+}
+
 
 # some windows
 view structure

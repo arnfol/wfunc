@@ -92,50 +92,73 @@ def readPacket(busNum=2, file="axis_o.txt"):
 # --------------------------------------------------------------
 # main
 # --------------------------------------------------------------
+def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
+	# generate input transactions
+	inp = genInput(packetSize,packetNum)
+	win = genWindow(packetSize)
 
-# parameters
-packetSize = 64
-packetNum = 5
-# randInput = False
-# randOutput = False
+	# generate reference result
+	math_log = open('check.log','w')
+	math_log.write('data * window = result\n')
+	result = []
+	for p in inp:
+		rp = []
+		for i in range(len(p)):
+			rp.append(p[i]*win[i])
+			math_log.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]) + '\n')
+		result.append(rp)
 
-# generate input transactions
-inp = genInput(packetSize,packetNum)
-win = genWindow(packetSize)
+	genReference(result)
 
-# generate reference result
-f = open('check.log','w')
-f.write('data * window = result\n')
-result = []
-for p in inp:
-	rp = []
-	for i in range(len(p)):
-		rp.append(p[i]*win[i])
-		f.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]) + '\n')
-	result.append(rp)
+	# run vsim
+	vsim = 'cd ../../../sim/modelsim && \
+	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c \
+	-do "do ../../src/window_func/tb/run.tcl'
 
-genReference(result)
+	vsim += ' {}'.format(packetSize)
+	vsim += ' {}'.format(busNum)
+	vsim += ' 1' if revertAddr else ' 0'
+	vsim += ' 1' if randInput else ' 0'
+	vsim += ' 1' if randOutput else ' 0'
+	vsim += '"' 
 
-# run vsim
-vsim = 'cd ../../../sim/modelsim && \
-/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c \
--do ../../src/window_func/tb/run.tcl'
+	vsim = vsim + ' > ../../src/window_func/tb/vsim.log'
+	# print(vsim)
 
-# vsim += ' -g IN_RAND=1' if randInput else ' -g IN_RAND=0'
-# vsim += ' -g OUT_RAND=1' if randOutput else ' -g OUT_RAND=0'
+	subprocess.Popen('cat > axis_o.txt',shell=True) # delete old result
+	subprocess.call(vsim,shell=True)
+	
+	# print parameters from testbench
+	with open('vsim.log','r') as log:
+		for line in log:
+			if 'CONFIG' in line:
+				print(re.sub('^.*:\s+|\s+\n','',line),end=', ')
 
 
-vsim = vsim + ' > ../../src/window_func/tb/vsim.log'
-print(vsim)
-subprocess.Popen('cat > axis_o.txt',shell=True) # delete old result
-subprocess.call(vsim,shell=True)
+	# check results
+	if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
+		print('Check passed!')
+		math_log.write('Check passed!')
+	else:
+		print('Files do not match!')
+		math_log.write('Files do not match!')
 
-# check results
-if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
-	print('Check passed!')
-	f.write('Check passed!')
-else:
-	print('Files do not match!')
-	f.write('Files do not match!')
+	math_log.close()
 
-f.close()
+
+packetSizeCases = [32,64]#[128, 512, 2048, 4096, 8192]
+busNumCases = [2, 4, 8]
+revertAddrCases = [True,False]
+randInputCases = [True,False]
+randOutputCases = [True,False]
+
+
+if __name__ == '__main__':
+	# runTest()
+
+	for bnum in busNumCases:
+		for size in packetSizeCases:
+			for i in randInputCases:
+				for o in randOutputCases:
+					runTest(packetSize=size,packetNum=10,busNum=bnum,revertAddr=False,randInput=i,randOutput=o)
+
