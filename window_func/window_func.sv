@@ -175,12 +175,13 @@ module window_func
 	assign fsm_addr = (APB_A_REV) ?  bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
 	assign fsm_cs   = (APB_A_REV) ? ~bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
 
+	assign prdata = (paddr[APB_AW-1]) ? reg_rdata : mem_rdata[fsm_addr[$clog2(BUS_NUM)+1:2]];
+
 	always_comb begin : proc_fsm
 		mem_write = '0;
 		mem_addr  = '0;
 		mem_cs    = '0;
 		mem_wdata = '0;
-		prdata    = reg_rdata;
 		in_tready = 0;
 
 		nxt_state = IDLE;
@@ -193,8 +194,6 @@ module window_func
 				mem_write = pwrite;
 				mem_addr  = fsm_addr >> $clog2(BUS_NUM);
 				mem_cs[fsm_cs] = (!paddr[APB_AW-1]) ? psel & !penable : '0;
-
-				if(!paddr[APB_AW-1]) prdata = mem_rdata[fsm_addr[APB_AW-2:MEM_AW+2]];
 
 				nxt_state = (change_state) ? WAIT : IDLE;
 			end
