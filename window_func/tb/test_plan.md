@@ -29,12 +29,12 @@
 | Name           | Priority |
 | -------------- | -------- |
 | **Parameters** |          |
-| FFT_SIZE: ALL  | MEDIUM   |
-| BUS_NUM: ALL   | MEDIUM   |
-| APB_A_REV: 0   | *HIGH*   |
+| FFT_SIZE: ALL  | DONE     |
+| BUS_NUM: ALL   | DONE     |
+| APB_A_REV: 0   | DONE     |
 | APB_A_REV: 1   | LOW      |
 | **Interfaces** |          |
-| AXIS           | *HIGH*   |
-| APB            | DONE     |
+| AXIS           | DONE     |
+| APB            | *HIGH*   |
 | **FSM**        | *HIGH*   |
 

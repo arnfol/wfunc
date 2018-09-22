@@ -94,7 +94,7 @@ def readPacket(busNum=2, file="axis_o.txt"):
 # --------------------------------------------------------------
 def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
 	# generate input transactions
-	inp = genInput(packetSize,packetNum)
+	inp = genInput(packetSize,packetNum,busNum)
 	win = genWindow(packetSize)
 
 	# generate reference result
@@ -108,7 +108,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 			math_log.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]) + '\n')
 		result.append(rp)
 
-	genReference(result)
+	genReference(result,busNum)
 
 	# run vsim
 	vsim = 'cd ../../../sim/modelsim && \
@@ -147,20 +147,19 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 
 
 packetSizeCases = [128, 512, 2048, 4096, 8192]
-busNumCases = [2]#[2, 4, 8]
-revertAddrCases = [True,False]
+busNumCases = [2, 4, 8]
+revertAddrCases = [False] #[True,False]
 randInputCases = [True,False]
 randOutputCases = [True,False]
 
 
 if __name__ == '__main__':
-	# runTest()
+	for rev in revertAddrCases:
+		for bnum in busNumCases:
+			for size in packetSizeCases:
+				for i in randInputCases:
+					for o in randOutputCases:
+						runTest(packetSize=size,packetNum=10,busNum=bnum,revertAddr=rev,randInput=i,randOutput=o)
 
-	for bnum in busNumCases:
-		for size in packetSizeCases:
-			for i in randInputCases:
-				for o in randOutputCases:
-					runTest(packetSize=size,packetNum=10,busNum=bnum,revertAddr=False,randInput=i,randOutput=o)
-
-# runTest(packetSize=2048,packetNum=30,busNum=2,revertAddr=False,randInput=True,randOutput=True)
+	# runTest(packetSize=32,packetNum=5,busNum=4,revertAddr=False,randInput=True,randOutput=True)
 
