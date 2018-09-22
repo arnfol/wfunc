@@ -146,8 +146,8 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	math_log.close()
 
 
-packetSizeCases = [32,64]#[128, 512, 2048, 4096, 8192]
-busNumCases = [2, 4, 8]
+packetSizeCases = [128, 512, 2048, 4096, 8192]
+busNumCases = [2]#[2, 4, 8]
 revertAddrCases = [True,False]
 randInputCases = [True,False]
 randOutputCases = [True,False]
@@ -161,4 +161,6 @@ if __name__ == '__main__':
 			for i in randInputCases:
 				for o in randOutputCases:
 					runTest(packetSize=size,packetNum=10,busNum=bnum,revertAddr=False,randInput=i,randOutput=o)
+
+# runTest(packetSize=2048,packetNum=30,busNum=2,revertAddr=False,randInput=True,randOutput=True)
 

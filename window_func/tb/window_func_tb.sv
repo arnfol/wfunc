@@ -68,7 +68,7 @@ module window_func_tb ();
 	always #5 clk = ~clk;
 
 	initial begin 
-		repeat(2000) @(posedge clk);
+		repeat(20000000) @(posedge clk);
 		$display("%t : %-9s : %s", $time, "ERROR","Simulation terminated by timeout!");
 		$stop;
 	end
