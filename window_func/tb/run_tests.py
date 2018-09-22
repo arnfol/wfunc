@@ -112,8 +112,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 
 	# run vsim
 	vsim = 'cd ../../../sim/modelsim && \
-	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c \
-	-do "do ../../src/window_func/tb/run.tcl'
+	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do "do ../../src/window_func/tb/run.tcl'
 
 	vsim += ' {}'.format(packetSize)
 	vsim += ' {}'.format(busNum)
@@ -121,6 +120,8 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	vsim += ' 1' if randInput else ' 0'
 	vsim += ' 1' if randOutput else ' 0'
 	vsim += '"' 
+
+	vsim_command = re.sub('^.*?bin/','',vsim)
 
 	vsim = vsim + ' > ../../src/window_func/tb/vsim.log'
 	# print(vsim)
@@ -140,9 +141,9 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 		print('Check passed!')
 		math_log.write('Check passed!')
 	else:
-		print('Files do not match!')
+		print('Files do not match!', end=' ')
 		math_log.write('Files do not match!')
-
+		print('({})'.format(vsim_command))
 	math_log.close()
 
 
