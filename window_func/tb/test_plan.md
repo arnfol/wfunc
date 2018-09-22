@@ -23,7 +23,6 @@
 	* _SOFT_RESET_
 	* Check move to _BUSY_ state.
 * Check impossibility to change window registers when not in _IDLE_.
-* Check whether in one-packet mode FSM goes to _IDLE_ after receipt.
 
 ## Priority
 | Name           | Priority |
@@ -35,6 +34,6 @@
 | APB_A_REV: 1   | LOW      |
 | **Interfaces** |          |
 | AXIS           | DONE     |
-| APB            | *HIGH*   |
+| APB            | DONE     |
 | **FSM**        | *HIGH*   |
 

@@ -35,8 +35,8 @@ module window_func_tb ();
 
 	import axis_pkg::*;
 
-	parameter FFT_SIZE = 64;
-	parameter BUS_NUM  = 2;
+	parameter FFT_SIZE = 128;
+	parameter BUS_NUM  = 8;
 	parameter APB_A_REV = 0;
 
 	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
@@ -91,14 +91,15 @@ module window_func_tb ();
 	--  Main
 	------------------------------------------------------------------------------*/
 	initial begin
-		// reset(1);
-		// $display("%t : %-9s : Check initial APB values", $time, "TEST 1");
-		// test1();
+		if(IN_RAND & OUT_RAND) begin // just to reduce number of the same tests in automated runs
+			reset(1);
+			$display("%t : %-9s : Check initial APB values", $time, "TEST 1");
+			test1();
 
-		// reset(1);
-		// $display("%t : %-9s : Check APB reg types", $time, "TEST 2");
-		// test2();
-
+			reset(1);
+			$display("%t : %-9s : Check APB reg types", $time, "TEST 2");
+			test2();
+		end
 		reset(1);
 		$display("%t : %-9s : Check module work", $time, "TEST 3");
 		test3();
@@ -128,12 +129,12 @@ module window_func_tb ();
 
 		for(int i = 0; i < FFT_SIZE; i++) begin
 			apb_read(i<<2,verbose);
-			assert(prdata === 32'dx);
+			assert(prdata === 32'dx) else $fatal("Window memory (ADDR=%0h) not empty!",i<<2);
 		end
 		apb_read(FFT_SIZE<<2,verbose);
-		assert(prdata == 32'd0);
+		assert(prdata == 32'd0) else $fatal("Register %0h not 0!",FFT_SIZE<<2);
 		apb_read((FFT_SIZE+1)<<2,verbose);
-		assert(prdata == 32'd0);
+		assert(prdata == 32'd0)else $fatal("Register %0h not 0!",FFT_SIZE+1<<2);
 
 	endtask : test1	
 
@@ -149,20 +150,16 @@ module window_func_tb ();
 
 			apb_write(i<<2,data,verbose);
 			apb_read(i<<2,verbose);
-			assert(prdata == data);
+			assert(prdata == data) else $fatal("Window memory (ADDR=%0h) error! %8h expected, %8h got.",i<<2,data,prdata);
 		end
 
 		apb_write(FFT_SIZE<<2,'hFFFF_FFFF,verbose);
 		apb_read(FFT_SIZE<<2,verbose);
-		assert(prdata == 32'd0);
+		assert(prdata == 32'd0) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE<<2,0,prdata);
 
 		apb_write((FFT_SIZE+1)<<2,'hFFFF_FFFF,verbose);
 		apb_read((FFT_SIZE+1)<<2,verbose);
-		assert(prdata == 32'd1);
-
-		apb_write((FFT_SIZE+1)<<2,'hFFFF_FFFE,verbose);
-		apb_read((FFT_SIZE+1)<<2,verbose);
-		assert(prdata == 32'd0);
+		assert(prdata == 32'd0) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,0,prdata);
 
 	endtask : test2	
 
