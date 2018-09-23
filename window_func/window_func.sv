@@ -94,7 +94,7 @@ module window_func
 	#(
 	FFT_SIZE  = 8192                      , // should be power of 2
 	BUS_NUM   = 2                         , // should be >= 2
-	APB_A_REV = 1                         , // either do bit revert on APB address (1) or not (0)
+	APB_A_REV = 0                         , // either do bit revert on APB address (1) or not (0)
 	MEM_AW    = $clog2((FFT_SIZE/BUS_NUM)-1),
 	APB_AW    = $clog2(FFT_SIZE-1)+2+1      // +2 for LSB in addr for potential byte access, +1 for control regs
 ) (
@@ -242,7 +242,8 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  MEM for window
 	------------------------------------------------------------------------------*/
-	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mem_gen
+	genvar i;
+	generate for (i = 0; i < BUS_NUM; i++) begin : mem_gen
 		spram #(.DW(32), .AW(MEM_AW)) u_spram (
 			.clk (clk           ),
 			.data(mem_wdata[i]),
@@ -368,7 +369,7 @@ module window_func
 	end
 
 	// math
-	generate for (genvar i = 0; i < BUS_NUM; i++) begin : mult_gen
+	generate for (i = 0; i < BUS_NUM; i++) begin : mult_gen
 				
 		sample_t_int a;
 		sample_t_int b;
@@ -390,7 +391,7 @@ module window_func
 			if(~rst_n) begin
 				z_del[i] <= '{0,0};
 			end else if(!tvalid_save | in_tready) begin
-				z_del[i] <= (save_trans) ? z[i] : '{0,0};
+				z_del[i] <= (save_trans) ? z[i] : {32'd0,32'd0};
 			end
 		end
 
