@@ -44,7 +44,8 @@ def genWindow(size, file="window.txt"):
 	window = []
 	with open(file,"w+") as f:
 		for i in range(size):
-			data = randComplex()
+			# data = randComplex()
+			data = complex(0,i)
 			window.append(data)
 			f.write("{0:04x}{1:04x}\n".format(hexp(data.imag),hexp(data.real)))
 
