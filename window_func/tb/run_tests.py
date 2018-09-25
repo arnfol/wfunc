@@ -95,7 +95,13 @@ def readPacket(busNum=2, file="axis_o.txt"):
 def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
 	# generate input transactions
 	inp = genInput(packetSize,packetNum,busNum)
-	win = genWindow(packetSize)
+	win_tmp = genWindow(packetSize)
+	win = win_tmp
+
+	# revert address bits if necessary
+	if revertAddr:
+		for i in range(packetSize):
+			win[i] = win_tmp[int('{0:0{1}b}'.format(i,packetSize.bit_length()-1)[::-1], 2)]
 
 	# generate reference result
 	math_log = open('check.log','w')
@@ -147,9 +153,9 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	math_log.close()
 
 
-packetSizeCases = [128, 512, 2048, 4096, 8192]
-busNumCases = [2, 4, 8]
-revertAddrCases = [False] #[True,False]
+packetSizeCases = [32]#[128, 512, 2048, 4096, 8192]
+busNumCases = [2]#[2, 4, 8]
+revertAddrCases = [True] #[True,False]
 randInputCases = [True,False]
 randOutputCases = [True,False]
 
