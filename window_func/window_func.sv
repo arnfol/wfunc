@@ -125,7 +125,7 @@ module window_func
 		for (int i = 2; i < APB_AW-1; i++) begin
 			out[i] = in[APB_AW-i];
 		end
-		out = out ^ ~(1<<APB_AW-3); // invert all bits except the MSB
+		// out = out ^ ~(1<<APB_AW-3); // invert all bits except the MSB
 		return out;
 	endfunction : bit_rev
 
@@ -172,8 +172,8 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  FSM
 	------------------------------------------------------------------------------*/
-	assign fsm_addr = (APB_A_REV) ?  bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
-	assign fsm_cs   = (APB_A_REV) ? ~bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
+	assign fsm_addr = (APB_A_REV) ? bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
+	assign fsm_cs   = (APB_A_REV) ? bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2]; // automatically truncated
 
 	assign prdata = (paddr[APB_AW-1]) ? reg_rdata : mem_rdata[fsm_addr[$clog2(BUS_NUM)+1:2]];
 

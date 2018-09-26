@@ -3,13 +3,16 @@ import re
 import subprocess, os
 import filecmp
 
+
 def randComplex():
 	im = random.randrange(-1<<15,1<<15)
 	re = random.randrange(-1<<15,1<<15)
 	return complex(re,im)
 
+
 def hexp(a,bits=16):
 	return (int(a) & (2**bits - 1))
+
 
 def htoi(h):
 	x = int(h,16)
@@ -17,6 +20,7 @@ def htoi(h):
 	    x -= 0x100000000
 
 	return x
+
 
 def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 	transNum = int(size/busNum)
@@ -40,6 +44,7 @@ def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 
 	return packetList
 
+
 def genWindow(size, file="window.txt"):
 	window = []
 	with open(file,"w+") as f:
@@ -48,8 +53,9 @@ def genWindow(size, file="window.txt"):
 			data = complex(0,i)
 			window.append(data)
 			f.write("{0:04x}{1:04x}\n".format(hexp(data.imag),hexp(data.real)))
-
+	
 	return window
+
 
 def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 	with open(file,"w+") as f:
@@ -67,6 +73,7 @@ def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 					transPart = ltmp.pop(0)
 					f.write("{0:08x}{1:08x}".format(hexp(transPart.imag,32),hexp(transPart.real,32)))
 				f.write("\n")
+
 
 def readPacket(busNum=2, file="axis_o.txt"):
 	packetList = []
@@ -90,19 +97,18 @@ def readPacket(busNum=2, file="axis_o.txt"):
 				raise ValueError('Unexpected value %s in TLAST position, should be 1 or 0.' % last)
 	return packetList
 
-# --------------------------------------------------------------
-# main
-# --------------------------------------------------------------
+
 def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
 	# generate input transactions
 	inp = genInput(packetSize,packetNum,busNum)
 	win_tmp = genWindow(packetSize)
-	win = win_tmp
+	win = win_tmp.copy()
 
 	# revert address bits if necessary
 	if revertAddr:
 		for i in range(packetSize):
-			win[i] = win_tmp[int('{0:0{1}b}'.format(i,packetSize.bit_length()-1)[::-1], 2)]
+			i_rev = int('{0:0{1}b}'.format(i,packetSize.bit_length()-1)[::-1], 2)
+			win[i] = win_tmp[i_rev]
 
 	# generate reference result
 	math_log = open('check.log','w')
@@ -154,14 +160,14 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	math_log.close()
 
 
-packetSizeCases = [32]#[128, 512, 2048, 4096, 8192]
-busNumCases = [2]#[2, 4, 8]
-revertAddrCases = [True] #[True,False]
-randInputCases = [True,False]
-randOutputCases = [True,False]
-
-
 if __name__ == '__main__':
+
+	packetSizeCases = [128, 512, 2048, 4096, 8192]
+	busNumCases = [2, 4, 8]
+	revertAddrCases = [True,False]
+	randInputCases = [True,False]
+	randOutputCases = [True,False]
+
 	for rev in revertAddrCases:
 		for bnum in busNumCases:
 			for size in packetSizeCases:
