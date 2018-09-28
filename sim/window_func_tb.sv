@@ -39,9 +39,9 @@ module window_func_tb ();
 	parameter BUS_NUM  = 8;
 	parameter APB_A_REV = 0;
 
-	localparam WINDOW_FILE = "../../src/window_func/tb/window.txt";
-	localparam AXIS_I_FILE = "../../src/window_func/tb/axis_i.txt";
-	localparam AXIS_O_FILE = "../../src/window_func/tb/axis_o.txt";
+	localparam WINDOW_FILE = "../window.txt";
+	localparam AXIS_I_FILE = "../axis_i.txt";
+	localparam AXIS_O_FILE = "../axis_o.txt";
 
 	parameter IN_RAND = 1;
 	parameter OUT_RAND = 1;

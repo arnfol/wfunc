@@ -3,6 +3,12 @@ import re
 import subprocess, os
 import filecmp
 
+window_i_file = '../window.txt'
+axis_i_file = '../axis_i.txt'
+axis_o_file = '../axis_o.txt'
+axis_check_file = '../axis_o_check.txt'
+math_log_file = '../check.log'
+
 
 def randComplex():
 	im = random.randrange(-1<<15,1<<15)
@@ -22,7 +28,7 @@ def htoi(h):
 	return x
 
 
-def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
+def genInput(size, packNum=1, busNum=2, file=axis_i_file):
 	transNum = int(size/busNum)
 	packetList = []
 	with open(file,"w+") as f:
@@ -45,7 +51,7 @@ def genInput(size, packNum=1, busNum=2, file="axis_i.txt"):
 	return packetList
 
 
-def genWindow(size, file="window.txt"):
+def genWindow(size, file=window_i_file):
 	window = []
 	with open(file,"w+") as f:
 		for i in range(size):
@@ -57,7 +63,7 @@ def genWindow(size, file="window.txt"):
 	return window
 
 
-def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
+def genReference(outDataList,busNum=2,file=axis_check_file):
 	with open(file,"w+") as f:
 		for l in outDataList:
 			ltmp = l.copy()
@@ -75,7 +81,7 @@ def genReference(outDataList,busNum=2,file="axis_o_check.txt"):
 				f.write("\n")
 
 
-def readPacket(busNum=2, file="axis_o.txt"):
+def readPacket(busNum=2, file=axis_o_file):
 	packetList = []
 	packet = []
 	p = 0
@@ -111,7 +117,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 			win[i] = win_tmp[i_rev]
 
 	# generate reference result
-	math_log = open('check.log','w')
+	math_log = open(math_log_file,'w')
 	math_log.write('data * window = result\n')
 	result = []
 	for p in inp:
@@ -124,8 +130,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	genReference(result,busNum)
 
 	# run vsim
-	vsim = 'cd ../../../sim/modelsim && \
-	/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do "do ../../src/window_func/tb/run.tcl'
+	vsim = '/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do "do run.tcl'
 
 	vsim += ' {}'.format(packetSize)
 	vsim += ' {}'.format(busNum)
@@ -136,10 +141,10 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 
 	vsim_command = re.sub('^.*?bin/','',vsim)
 
-	vsim = vsim + ' > ../../src/window_func/tb/vsim.log'
+	vsim = vsim + ' > vsim.log'
 	# print(vsim)
 
-	subprocess.Popen('cat > axis_o.txt',shell=True) # delete old result
+	subprocess.Popen('cat > '+axis_o_file,shell=True) # delete old result
 	subprocess.call(vsim,shell=True)
 	
 	# print parameters from testbench
@@ -150,7 +155,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 
 
 	# check results
-	if filecmp.cmp('axis_o.txt','axis_o_check.txt'):
+	if filecmp.cmp(axis_o_file,axis_check_file):
 		print('Check passed!')
 		math_log.write('Check passed!')
 	else:

@@ -8,8 +8,8 @@
 # The order of the files matters.
 #
 
-../../common/axis_pkg.sv
-../../common/spram.sv
+common/axis_pkg.sv
+common/spram.sv
 
-../complex_int_mult.sv
-../window_func.sv
+complex_int_mult.sv
+window_func.sv

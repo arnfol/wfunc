@@ -10,7 +10,9 @@ set top_lvl window_func_tb
 # VHDL and Verilog file extensions
 set vhd_ext {vhd vhdl}
 set ver_ext {v sv}
-set default_path "../../src/window_func/tb/"
+set default_path "../../src/"
+
+set macro_file "../wave.do"
 
 set vlog_opt {+incdir+../../src/common/}
 set vcom_opt {}
@@ -66,7 +68,7 @@ proc runfile [list file [list path ""] [list lib $worklib]] {
 
 #
 proc run_from [list file [list path "$default_path"] [list lib $worklib]] {
-    runfile "$path$file" "$path" "$lib"
+    runfile "$file" "$path" "$lib"
 }
 
 
@@ -74,8 +76,8 @@ proc run_from [list file [list path "$default_path"] [list lib $worklib]] {
 # compile
 # -------------------------------------------------------------------
 
-run_from "src_list.txt" 
-run_from "sim_list.txt" 
+run_from "../src_list.txt" "../../src/"
+run_from "../sim_list.txt" "../"
 
 
 
@@ -104,7 +106,7 @@ view signals
 view wave
 
 # signals
-do "${default_path}wave.do"
+if {!($macro_file eq "")} { do $macro_file }
 
 # run
 run -all
