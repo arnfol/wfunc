@@ -105,6 +105,11 @@ def readPacket(busNum=2, file=axis_o_file):
 
 
 def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
+
+	print('Run configuration: FFT_SIZE={:d}, BUS_NUM={:d}, APB_A_REV={:d}, IN_RAND={:d}, OUT_RAND={:d} -- '.format(
+		packetSize,busNum,revertAddr,randInput,randOutput),
+		end='')
+
 	# generate input transactions
 	inp = genInput(packetSize,packetNum,busNum)
 	win_tmp = genWindow(packetSize)
@@ -130,29 +135,17 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	genReference(result,busNum)
 
 	# run vsim
-	vsim = '/home/wazah/intelFPGA/18.0/modelsim_ase/bin/vsim -c -do "do run.tcl'
+	script_conf = '-do "do run.tcl'
+	script_conf += ' {}'.format(packetSize)
+	script_conf += ' {}'.format(busNum)
+	script_conf += ' 1' if revertAddr else ' 0'
+	script_conf += ' 1' if randInput else ' 0'
+	script_conf += ' 1' if randOutput else ' 0'
+	script_conf += '"' 
 
-	vsim += ' {}'.format(packetSize)
-	vsim += ' {}'.format(busNum)
-	vsim += ' 1' if revertAddr else ' 0'
-	vsim += ' 1' if randInput else ' 0'
-	vsim += ' 1' if randOutput else ' 0'
-	vsim += '"' 
+	vsim = 'vsim -c ' + script_conf
 
-	vsim_command = re.sub('^.*?bin/','',vsim)
-
-	vsim = vsim + ' > vsim.log'
-	# print(vsim)
-
-	subprocess.Popen('cat > '+axis_o_file,shell=True) # delete old result
-	subprocess.call(vsim,shell=True)
-	
-	# print parameters from testbench
-	with open('vsim.log','r') as log:
-		for line in log:
-			if 'CONFIG' in line:
-				print(re.sub('^.*:\s+|\s+\n','',line),end=', ')
-
+	subprocess.call(vsim,shell=True,stdout=subprocess.DEVNULL)
 
 	# check results
 	if filecmp.cmp(axis_o_file,axis_check_file):
@@ -161,7 +154,7 @@ def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,
 	else:
 		print('Files do not match!', end=' ')
 		math_log.write('Files do not match!')
-		print('({})'.format(vsim_command))
+		print('({})'.format(vsim))
 	math_log.close()
 
 
