@@ -169,6 +169,14 @@ module window_func
 	logic in_hshake;
 	sample_t_int in_tdata_pipe[BUS_NUM], in_tdata_pipe_[BUS_NUM];
 
+	logic tvalid_save;
+	logic tlast_save;
+	logic save_trans;
+	logic data_line_en_del;
+	sample_t z[BUS_NUM];
+	sample_t z_del[BUS_NUM];
+
+
 	/*------------------------------------------------------------------------------
 	--  FSM
 	------------------------------------------------------------------------------*/
@@ -214,7 +222,7 @@ module window_func
 				mem_cs = '1;
 				mem_addr = sample_cntr;
 
-				nxt_state = (data_line_en & in_hshake_pipe & in_tlast_pipe) ? WAIT : BUSY;
+				nxt_state = (data_line_en_del & in_hshake_pipe & in_tlast_pipe) ? WAIT : BUSY;
 			end
 
 			default : begin 
@@ -314,12 +322,6 @@ module window_func
 	/*------------------------------------------------------------------------------
 	--  MATH DATA LINE
 	------------------------------------------------------------------------------*/
-	logic tvalid_save;
-	logic tlast_save;
-	logic save_trans;
-	logic data_line_en_del;
-	sample_t z[BUS_NUM];
-	sample_t z_del[BUS_NUM];
 
 	assign data_line_en = out_tready | !out_tvalid;
 
@@ -404,6 +406,7 @@ module window_func
 	always_comb begin 
 		rd_regs = regs_rst;
 
+		rd_regs[0][8] = change_state;
 		rd_regs[1][9:8] = state;
 	end
 
