@@ -12,7 +12,7 @@ set vhd_ext {vhd vhdl}
 set ver_ext {v sv}
 set default_path "../../src/"
 
-set macro_file "../wave.do"
+set macro_file "wave.do"
 
 set vlog_opt {+incdir+../../src/common/}
 set vcom_opt {}
