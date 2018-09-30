@@ -248,7 +248,7 @@ module window_func_tb ();
 		repeat(10) @(posedge clk);
 		apb_read((FFT_SIZE+1)<<2,verbose);
 		assert(prdata == 32'h0000_0000) $display("%t : %-9s : BUSY to IDLE through WAIT - OK.", $time, "DEBUG");
-			else $error("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0000,prdata);
+			else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0000,prdata);
 
 		repeat(50) @(posedge clk); 
 	endtask : test4
