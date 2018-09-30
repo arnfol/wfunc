@@ -163,9 +163,21 @@ module window_func_tb ();
 
 	endtask : test2	
 
-	task test3();
-		window_init();
+	task test3(bit verbose=0);
+		window_init(verbose);
+
+		// check fsm state
+		apb_read((FFT_SIZE+1)<<2,verbose);
+		assert(prdata == 32'd0) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,0,prdata);
+
+		// start operation
 		apb_write(FFT_SIZE<<2,'h0000_0100);
+
+		// check whether state changed
+		apb_read((FFT_SIZE+1)<<2,verbose);
+		assert(prdata == 32'h0000_0100) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0100,prdata);
+
+		// run data stream
 		fork
 			read_axis();
 			write_axis();
