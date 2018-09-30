@@ -179,11 +179,10 @@ module window_func
 
 	always_comb begin : proc_fsm
 		mem_write = '0;
-		mem_addr  = '0;
-		mem_cs    = '0;
 		mem_wdata = '0;
+		mem_addr = '0;
+		mem_cs = '0;
 		in_tready = 0;
-
 		nxt_state = IDLE;
 
 		case (state)
@@ -215,11 +214,7 @@ module window_func
 				mem_cs = '1;
 				mem_addr = sample_cntr;
 
-				if(data_line_en & in_hshake_pipe & in_tlast_pipe) begin 
-					nxt_state = WAIT;
-				end else begin 
-					nxt_state = BUSY;
-				end
+				nxt_state = (data_line_en & in_hshake_pipe & in_tlast_pipe) ? WAIT : BUSY;
 			end
 
 			default : begin 
@@ -406,23 +401,24 @@ module window_func
 	assign reg_rdata = rd_regs[reg_addr];
 	assign reg_en    = psel & !penable & paddr[APB_AW-1];
 
-	always_ff @(posedge clk or negedge rst_n) begin : proc_regs
-		if(~rst_n) begin
-			wr_regs_del <= regs_rst;
-			wr_regs     <= regs_rst;
-		end else begin
-			wr_regs_del <= wr_regs;
-			if(reg_en & reg_write) wr_regs[reg_addr] <= reg_wdata;
-		end
-	end
-
 	always_comb begin 
 		rd_regs = regs_rst;
 
 		rd_regs[1][9:8] = state;
 	end
 
-	assign soft_rst     = (wr_regs[0][0] ^ wr_regs_del[0][0]) ? 1 : 0;
-	assign change_state = (wr_regs[0][8] ^ wr_regs_del[0][8]) ? 1 : 0;
+	always_ff @(posedge clk or negedge rst_n) begin : proc_change_state
+		if(~rst_n) begin
+			change_state <= 0;
+			soft_rst <= 0;
+		end else begin
+			change_state <= (state == IDLE | state == WAIT) ? 0 : change_state;
+			soft_rst <= 0;
+			if(reg_en & reg_write & reg_addr==0) begin
+				change_state <= reg_wdata[8];
+				soft_rst <= reg_wdata[0];
+			end
+		end
+	end
 
 endmodule
