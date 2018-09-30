@@ -36,7 +36,7 @@ module window_func_tb ();
 	import axis_pkg::*;
 
 	parameter FFT_SIZE = 128;
-	parameter BUS_NUM  = 8;
+	parameter BUS_NUM  = 2;
 	parameter APB_A_REV = 0;
 
 	localparam WINDOW_FILE = "../window.txt";
@@ -45,6 +45,8 @@ module window_func_tb ();
 
 	parameter IN_RAND = 1;
 	parameter OUT_RAND = 1;
+
+	parameter TEST_FSM = 0;
 
 	logic in_tlast;
 	sample_t_int in_tdata[BUS_NUM];
@@ -100,9 +102,15 @@ module window_func_tb ();
 			$display("%t : %-9s : Check APB reg types", $time, "TEST 2");
 			test2();
 		end
+
 		reset(1);
-		$display("%t : %-9s : Check module work", $time, "TEST 3");
-		test3();
+		if(!TEST_FSM) begin
+			$display("%t : %-9s : Check module work", $time, "TEST 3");
+			test3();
+		end else begin
+			$display("%t : %-9s : Check FSM states' transitions", $time, "TEST 4");
+			test4();
+		end
 
 		repeat(10) @(posedge clk);
 		$display("%t : %-9s : Test complete.", $time, "MAIN");
@@ -166,14 +174,14 @@ module window_func_tb ();
 	task test3(bit verbose=0);
 		window_init(verbose);
 
-		// check fsm state
+		// check IDLE state
 		apb_read((FFT_SIZE+1)<<2,verbose);
 		assert(prdata == 32'd0) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,0,prdata);
 
 		// start operation
 		apb_write(FFT_SIZE<<2,'h0000_0100);
 
-		// check whether state changed
+		// check WAIT state
 		apb_read((FFT_SIZE+1)<<2,verbose);
 		assert(prdata == 32'h0000_0100) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0100,prdata);
 
@@ -181,9 +189,69 @@ module window_func_tb ();
 		fork
 			read_axis();
 			write_axis();
+			for (int i = 0; i < 20; i++) begin
+				apb_read((FFT_SIZE+1)<<2,verbose);
+				if(prdata == 32'h0000_0200) begin
+					$display("%t : %-9s : BUSY state check - OK.", $time, "DEBUG");
+					break;
+				end
+				assert(i != 19) else $fatal("FSM does not move to BUSY state.");
+			end
 		join_any
 		do @(posedge clk); while(tr_wr_num != tr_rd_num);
 	endtask : test3
+
+	task test4(bit verbose=0);
+		window_init(verbose);
+
+		// check IDLE state
+		apb_read((FFT_SIZE+1)<<2,verbose);
+		assert(prdata == 32'd0) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,0,prdata);
+
+		// start operation
+		apb_write(FFT_SIZE<<2,'h0000_0100);
+
+		// check WAIT state
+		apb_read((FFT_SIZE+1)<<2,verbose);
+		assert(prdata == 32'h0000_0100) else $fatal("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0100,prdata);
+
+		// run data stream
+		fork
+			write_axis();
+		join_none
+
+		// check BUSY
+		fork
+			read_axis_packet();
+			for (int i = 0; i < 20; i++) begin
+				apb_read((FFT_SIZE+1)<<2,verbose);
+				if(prdata == 32'h0000_0200) begin
+					$display("%t : %-9s : BUSY state check - OK.", $time, "DEBUG");
+					break;
+				end
+				assert(i != 19) else $fatal("FSM does not move to BUSY state.");
+			end
+		join
+
+		// check change_state in BUSY
+		fork
+			read_axis_packet();
+			for (int i = 0; i < 20; i++) begin
+				apb_read((FFT_SIZE+1)<<2,verbose);
+				if(prdata == 32'h0000_0200) begin
+					apb_write(FFT_SIZE<<2,'h0000_0100);
+					break;
+				end
+				assert(i != 19) else $fatal("FSM does not move to BUSY state.");
+			end
+		join
+		repeat(10) @(posedge clk);
+		apb_read((FFT_SIZE+1)<<2,verbose);
+		assert(prdata == 32'h0000_0000) $display("%t : %-9s : BUSY to IDLE through WAIT - OK.", $time, "DEBUG");
+			else $error("Reg %0h error! %8h expected, %8h got.",FFT_SIZE+1<<2,32'h0000_0000,prdata);
+
+		repeat(50) @(posedge clk); 
+	endtask : test4
 
 	/*------------------------------------------------------------------------------
 	--  Common tasks
@@ -200,7 +268,7 @@ module window_func_tb ();
 
 	task read_axis();
 		/* 
-		Reads input from file and runs AXIS trunsactions.
+		Reads input from file and runs AXIS transactions.
 		File format: <tlast(1b)>_<tdata(hex with "_")>
 		Example:    0_f12dc8ca_1d337a3e
 		            0_459a4094_067b682d
@@ -230,6 +298,52 @@ module window_func_tb ();
 		end
 		$fclose(rfile);
 	endtask : read_axis
+
+	task read_axis_packet(string file=AXIS_I_FILE);
+		/* 
+		Reads one axis packet from file and runs AXIS transactions.
+		File format: <tlast(1b)>_<tdata(hex with "_")>
+		Example:    0_f12dc8ca_1d337a3e
+		            0_459a4094_067b682d
+		            0_c7c57277_6063554d
+		            0_faf037fb_a7e5f604
+		            1_bc4c0c39_45bfc902
+		*/
+		
+		bit last;
+		int rfile;
+		logic [BUS_NUM-1:0][31:0] data;
+		axis_t dump;
+
+		last = 0;
+		rfile = $fopen(file,"r");
+
+		// if not first call, jump over packets which are already read
+		if(tr_rd_num > 0) begin 
+			for (int i = 0; i < tr_rd_num; i++) begin
+				$fscanf(rfile,"%1b_%h\n",last,data);
+			end
+		end
+
+		// read transactions and run axis
+		do begin 
+			tr_rd_num++;
+			$fscanf(rfile,"%1b_%h\n",last,data);
+			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
+			// $display("%t : %-9s : last: %b", $time, "DEBUG", last);
+			foreach(data[i]) begin
+				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
+				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
+				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
+			end
+			in_tlast <= last;
+			if(IN_RAND)	in_cyc_wait($urandom_range(10));
+			in_send(dump);
+		end while(last != 1 & !$feof(rfile));
+
+		$fclose(rfile);
+
+	endtask : read_axis_packet
 
 	task write_axis();
 		int wfile;
