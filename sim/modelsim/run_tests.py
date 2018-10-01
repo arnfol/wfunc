@@ -79,29 +79,6 @@ def genReference(outDataList,busNum=2,file=axis_check_file):
 				f.write("\n")
 
 
-def readPacket(busNum=2, file=axis_o_file):
-	packetList = []
-	packet = []
-	p = 0
-	with open(file,"r") as f:
-		for line in f:
-			line = re.sub('_','',line)
-
-			# get new values
-			last = line[0]
-			packet.extend([htoi(i) for i in re.findall("([0-9a-fA-F]{8})",line[1:])])
-
-			# check TLAST
-			if(int(last) == 1):
-				packetList.append(packet.copy())
-				packet.clear()
-			elif(int(last) == 0):
-				pass
-			else:
-				raise ValueError('Unexpected value %s in TLAST position, should be 1 or 0.' % last)
-	return packetList
-
-
 def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
 
 	print('Run configuration: FFT_SIZE={:d}, BUS_NUM={:d}, APB_A_REV={:d}, IN_RAND={:d}, OUT_RAND={:d} -- '.format(
