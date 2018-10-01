@@ -49,22 +49,22 @@ module axis_tlast_gen
 	output sample_t           out_tdata [BUS_NUM]
 );
 
-	localparam CNTR_SIZE = $clog2(PACK_SIZE-1);
+	localparam CNTR_SIZE = $clog2(PACK_SIZE/BUS_NUM);
 
 	logic [CNTR_SIZE-1:0] cntr;
 
 
 	always_ff @(posedge clk or negedge rst_n) begin : proc_cntr
 		if(~rst_n) begin
-			cntr <= PACK_SIZE-1;
+			cntr <= '1;
 		end else if(en & in_tvalid & in_tready) begin
-			cntr <= (cntr == 0) ? PACK_SIZE-1 : cntr-1;
+			cntr <= cntr-1;
 		end
 	end
 
+	assign out_tlast  = (cntr == 0);
 	assign in_tready  = out_tready;
 	assign out_tvalid = in_tvalid ;
-	assign out_tlast  = (cntr == 0);
 	always_comb begin 
 		for (int i = 0; i < BUS_NUM; i++) begin
 			out_tdata[i]  = in_tdata[i];

@@ -336,7 +336,6 @@ module window_func_tb ();
 				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
 				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
 			end
-			in_tlast <= last;
 			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
 		end while(last != 1 & !$feof(rfile));
@@ -383,7 +382,6 @@ module window_func_tb ();
 
 		.in_tvalid (in_tvalid ),
 		.in_tready (in_tready ),
-		.in_tlast  (in_tlast  ),
 		.in_tdata  (in_tdata  ),
 
 		.out_tvalid(out_tvalid),

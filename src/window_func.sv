@@ -103,7 +103,6 @@ module window_func
 	// AXIS input
 	input                     in_tvalid          ,
 	output logic              in_tready          ,
-	input                     in_tlast           ,
 	input  sample_t_int       in_tdata  [BUS_NUM],
 	// AXIS output
 	output logic              out_tvalid         ,
@@ -175,6 +174,8 @@ module window_func
 	logic data_line_en_del;
 	sample_t z[BUS_NUM];
 	sample_t z_del[BUS_NUM];
+
+	logic [$clog2(FFT_SIZE/BUS_NUM)-1:0] in_tlast_cntr;
 
 
 	/*------------------------------------------------------------------------------
@@ -261,6 +262,15 @@ module window_func
 	--  INPUT STAGE
 	------------------------------------------------------------------------------*/
 
+	// counter for input tlast generation
+	always_ff @(posedge clk or negedge rst_n) begin : proc_in_tlast_cntr
+		if(~rst_n) begin
+			in_tlast_cntr <= '1;
+		end else if(in_hshake) begin
+			in_tlast_cntr <= in_tlast_cntr-1;
+		end
+	end
+
 	assign in_hshake = in_tvalid & in_tready;
 
 	// input handshake pipeline for memory delay compensation
@@ -289,7 +299,7 @@ module window_func
 				in_tdata_pipe_[i] <= '{0,0};
 			end
 		end else if(in_hshake) begin
-			in_tlast_pipe_ <= in_tlast;
+			in_tlast_pipe_ <= (in_tlast_cntr == 0);
 			for (int i = 0; i < BUS_NUM; i++) begin
 				in_tdata_pipe_[i] <= in_tdata[i];
 			end
