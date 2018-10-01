@@ -36,13 +36,11 @@ def genInput(size, packNum=1, busNum=2, file=axis_i_file):
 			# generate packet
 			packet = []
 			for i in range(transNum):
-				# generate tlast
-				f.write("{0:b}".format(i==transNum-1))
 				# generate data
 				for b in range(busNum):
 					data = randComplex()
 					packet.append(data)
-					f.write("_{0:04x}{1:04x}".format(hexp(data.imag),hexp(data.real)))
+					f.write("{0:04x}{1:04x}_".format(hexp(data.imag),hexp(data.real)))
 				f.write("\n")
 
 			# add packet to list

@@ -277,22 +277,19 @@ module window_func_tb ();
 		            1_bc4c0c39_45bfc902
 		*/
 		int rfile;
-		bit last;
 		logic [BUS_NUM-1:0][31:0] data;
 		axis_t dump;
 
 		rfile = $fopen(AXIS_I_FILE,"r");
 		while(!$feof(rfile)) begin 
 			tr_rd_num++;
-			$fscanf(rfile,"%1b_%h\n",last,data);
+			$fscanf(rfile,"%h\n",data);
 			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
-			// $display("%t : %-9s : last: %b", $time, "DEBUG", last);
 			foreach(data[i]) begin
 				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
 				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
 				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
 			end
-			in_tlast <= last;
 			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
 		end
@@ -310,27 +307,24 @@ module window_func_tb ();
 		            1_bc4c0c39_45bfc902
 		*/
 		
-		bit last;
 		int rfile;
 		logic [BUS_NUM-1:0][31:0] data;
 		axis_t dump;
 
-		last = 0;
 		rfile = $fopen(file,"r");
 
 		// if not first call, jump over packets which are already read
 		if(tr_rd_num > 0) begin 
 			for (int i = 0; i < tr_rd_num; i++) begin
-				$fscanf(rfile,"%1b_%h\n",last,data);
+				$fscanf(rfile,"%h\n",data);
 			end
 		end
 
 		// read transactions and run axis
 		do begin 
 			tr_rd_num++;
-			$fscanf(rfile,"%1b_%h\n",last,data);
+			$fscanf(rfile,"%h\n",data);
 			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
-			// $display("%t : %-9s : last: %b", $time, "DEBUG", last);
 			foreach(data[i]) begin
 				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
 				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
@@ -338,7 +332,7 @@ module window_func_tb ();
 			end
 			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
-		end while(last != 1 & !$feof(rfile));
+		end while(!(tr_rd_num % FFT_SIZE) & !$feof(rfile));
 
 		$fclose(rfile);
 
