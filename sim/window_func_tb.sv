@@ -48,11 +48,14 @@ module window_func_tb ();
 
 	parameter TEST_FSM = 0;
 
+	localparam IM = 1;
+	localparam RE = 0;
+
 	logic in_tlast;
-	sample_t_int in_tdata[BUS_NUM];
+	logic [BUS_NUM-1:0][1:0][15:0] in_tdata;
 
 	logic out_tlast;
-	sample_t out_tdata[BUS_NUM];
+	logic [BUS_NUM-1:0][1:0][31:0] out_tdata;
 
 	int tr_rd_num;
 	int tr_wr_num;
@@ -287,8 +290,8 @@ module window_func_tb ();
 			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
 			foreach(data[i]) begin
 				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
-				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
-				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
+				in_tdata[BUS_NUM-1-i][RE] <= data[i][15:0];
+				in_tdata[BUS_NUM-1-i][IM] <= data[i][31:16];
 			end
 			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
@@ -327,8 +330,8 @@ module window_func_tb ();
 			// $display("%t : %-9s : data: %h", $time, "DEBUG", data);
 			foreach(data[i]) begin
 				// $display("%t : %-9s : data[%2d]: %h", $time, "DEBUG", i, data[i]);
-				in_tdata[BUS_NUM-1-i].re <= data[i][15:0];
-				in_tdata[BUS_NUM-1-i].im <= data[i][31:16];
+				in_tdata[BUS_NUM-1-i][RE] <= data[i][15:0];
+				in_tdata[BUS_NUM-1-i][IM] <= data[i][31:16];
 			end
 			if(IN_RAND)	in_cyc_wait($urandom_range(10));
 			in_send(dump);
@@ -356,7 +359,7 @@ module window_func_tb ();
 			if(out_tvalid & out_tready) begin 
 				tr_wr_num++;
 				foreach(data[i]) begin
-					data[i] = {out_tdata[BUS_NUM-1-i].im,out_tdata[BUS_NUM-1-i].re};
+					data[i] = {out_tdata[BUS_NUM-1-i][IM],out_tdata[BUS_NUM-1-i][RE]};
 				end
 				$fdisplay(wfile,"%b_%h",out_tlast,data);
 			end
