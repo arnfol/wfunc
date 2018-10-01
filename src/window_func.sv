@@ -106,7 +106,7 @@ module window_func #(
 	output logic                          out_tvalid,
 	input                                 out_tready,
 	output logic                          out_tlast ,
-	output       [BUS_NUM-1:0][1:0][31:0] out_tdata , // in each bus 1 - Im, 0 - Re
+	output logic [BUS_NUM-1:0][1:0][31:0] out_tdata , // in each bus 1 - Im, 0 - Re
 	// APB bus
 	input                                 psel      ,
 	input        [ APB_AW-1:0]            paddr     ,
