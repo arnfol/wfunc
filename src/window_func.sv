@@ -87,36 +87,47 @@ to IDLE (3).
 ### BUSY ###
 In BUSY state module handles packet. You also cannot access window registers (address 
 x0000-[(FFT_SIZE-1)*4]). After reception of TLAST FSM goes  to WAIT state (5).
-	              
+				  
 */
-module window_func
-	import axis_pkg::*;
-	#(
-	FFT_SIZE  = 8192                      , // should be power of 2
-	BUS_NUM   = 2                         , // should be >= 2
-	APB_A_REV = 0                         , // either do bit revert on APB address (1) or not (0)
-	MEM_AW    = $clog2((FFT_SIZE/BUS_NUM)-1),
-	APB_AW    = $clog2(FFT_SIZE-1)+2+1      // +2 for LSB in addr for potential byte access, +1 for control regs
+module window_func #(
+	FFT_SIZE  = 8192                        , // should be power of 2
+	BUS_NUM   = 2                           , // should be >= 2
+	APB_A_REV = 0                           , // either do bit revert on APB address (1) or not (0)
+	MEM_AW    = $clog2((FFT_SIZE/BUS_NUM)-1), // do not change it
+	APB_AW    = $clog2(FFT_SIZE-1)+2+1        // do not change it
 ) (
-	input                     clk                ,
-	input                     rst_n              ,
+	input                                 clk       ,
+	input                                 rst_n     ,
 	// AXIS input
-	input                     in_tvalid          ,
-	output logic              in_tready          ,
-	input  sample_t_int       in_tdata  [BUS_NUM],
+	input                                 in_tvalid ,
+	output logic                          in_tready ,
+	input        [BUS_NUM-1:0][1:0][15:0] in_tdata  , // in each bus 1 - Im, 0 - Re
 	// AXIS output
-	output logic              out_tvalid         ,
-	input                     out_tready         ,
-	output logic              out_tlast          ,
-	output sample_t           out_tdata [BUS_NUM],
+	output logic                          out_tvalid,
+	input                                 out_tready,
+	output logic                          out_tlast ,
+	output       [BUS_NUM-1:0][1:0][31:0] out_tdata , // in each bus 1 - Im, 0 - Re
 	// APB bus
-	input                     psel               ,
-	input        [APB_AW-1:0] paddr              ,
-	input                     penable            ,
-	input                     pwrite             ,
-	input        [      31:0] pwdata             ,
-	output logic [      31:0] prdata
+	input                                 psel      ,
+	input        [ APB_AW-1:0]            paddr     ,
+	input                                 penable   ,
+	input                                 pwrite    ,
+	input        [       31:0]            pwdata    ,
+	output logic [       31:0]            prdata
 );
+
+	localparam IM = 1;
+	localparam RE = 0;
+
+	typedef struct packed {
+		logic signed [31:0] re;
+		logic signed [31:0] im;
+	} complex64;
+
+	typedef struct packed {
+		logic signed  [15:0] re;
+		logic signed  [15:0] im;
+	} complex32;
 
 	function logic [APB_AW-2:2] bit_rev(logic [APB_AW-2:2] in);
 		logic [APB_AW-2:2] out;
@@ -131,8 +142,8 @@ module window_func
 	localparam MATH_DELAY = 10;
 
 	enum logic [1:0] {IDLE = 2'b00,
-	                  WAIT = 2'b01,
-	                  BUSY = 2'b10} state, nxt_state;
+					  WAIT = 2'b01,
+					  BUSY = 2'b10} state, nxt_state;
 
 	logic [MEM_AW-1:0] sample_cntr;
 
@@ -166,14 +177,14 @@ module window_func
 	logic in_tlast_pipe, in_tlast_pipe_;
 	logic in_hshake_pipe, in_hshake_pipe_;
 	logic in_hshake;
-	sample_t_int in_tdata_pipe[BUS_NUM], in_tdata_pipe_[BUS_NUM];
+	complex32 in_tdata_pipe[BUS_NUM], in_tdata_pipe_[BUS_NUM];
 
 	logic tvalid_save;
 	logic tlast_save;
 	logic save_trans;
 	logic data_line_en_del;
-	sample_t z[BUS_NUM];
-	sample_t z_del[BUS_NUM];
+	complex64 z[BUS_NUM];
+	complex64 z_del[BUS_NUM];
 
 	logic [$clog2(FFT_SIZE/BUS_NUM)-1:0] in_tlast_cntr;
 
@@ -301,7 +312,8 @@ module window_func
 		end else if(in_hshake) begin
 			in_tlast_pipe_ <= (in_tlast_cntr == 0);
 			for (int i = 0; i < BUS_NUM; i++) begin
-				in_tdata_pipe_[i] <= in_tdata[i];
+				in_tdata_pipe_[i].re <= in_tdata[i][RE];
+				in_tdata_pipe_[i].im <= in_tdata[i][IM];
 			end
 		end
 	end
@@ -371,15 +383,16 @@ module window_func
 	assign out_tlast  = (tvalid_save) ? tlast_save  : tlast_pipe[MATH_DELAY-1];
 	always_comb begin : proc_out_tdata
 		for (int i = 0; i < BUS_NUM; i++) begin
-			out_tdata[i] = (tvalid_save) ? z_del[i] : z[i];
+			out_tdata[i][RE] = (tvalid_save) ? z_del[i].re : z[i].re;
+			out_tdata[i][IM] = (tvalid_save) ? z_del[i].im : z[i].im;
 		end
 	end
 
 	// math
 	generate for (i = 0; i < BUS_NUM; i++) begin : mult_gen
 				
-		sample_t_int a;
-		sample_t_int b;
+		complex32 a;
+		complex32 b;
 
 		assign a = in_tdata_pipe[i];
 		assign b.re = mem_rdata[i][15:0];
