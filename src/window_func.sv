@@ -379,7 +379,7 @@ module window_func #(
 	assign save_trans = !out_tready & data_line_en_del & tvalid_pipe[MATH_DELAY-1];
 
 	// additional register to save pushed out transaction
-	always_ff @(posedge clk or negedge rst_n) begin : proc_tvalid_save
+	always_ff @(posedge clk or negedge rst_n) begin : proc_save_trans
 		if(~rst_n) begin
 			tvalid_save <= 0;
 			tlast_save  <= 0;
@@ -396,7 +396,7 @@ module window_func #(
 	end
 
 	// output mux
-	always_comb begin : proc_out_tdata
+	always_comb begin : proc_out_mux
 		out_tvalid = (tvalid_save) ? tvalid_save : tvalid_pipe[MATH_DELAY-1];
 		out_tlast  = (tvalid_save) ? tlast_save  : tlast_pipe[MATH_DELAY-1];
 		for (int i = 0; i < BUS_NUM; i++) begin
