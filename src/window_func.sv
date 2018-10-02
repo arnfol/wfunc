@@ -56,9 +56,14 @@ packets after FFT.
 | BITS       | ACCESS  | RST VALUE  | DESCRIPTION                                        |
 |------------|---------|------------|----------------------------------------------------|
 | 31-9       |  RO     |  x000000   | Unused                                             |
-| 8          |  WO     |  -         | Writing 1 executes command "CHANGE STATE"          |
+| 8          |  RW     |  -         | Writing 1 executes command "CHANGE STATE"          |
 | 7-1        |  RO     |  x00       | Unused                                             |
 | 0          |  WO     |  -         | FSM reset. Writing 1 puts FSM into IDLE state      |
+
+**Note:** In states IDLE or WAIT command "CHANGE STATE" immediately forces FSM to move to 
+the next state. In this case corresponding bit (bit 8) in Control register is deasserted
+on the next clock edge after it was asserted. However, in BUSY state this bit stores its
+value waiting for FSM to move to another state.
 
 ## [(FFT_SIZE+1)*4] : Status register ##
 
