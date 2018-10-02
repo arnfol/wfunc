@@ -1,6 +1,7 @@
 import random
 import re
-import subprocess, os
+import subprocess
+import os
 import filecmp
 
 window_i_file = '../window.txt'
@@ -10,143 +11,136 @@ axis_check_file = '../axis_o_check.txt'
 math_log_file = '../check.log'
 
 
-def randComplex():
-	im = random.randrange(-1<<15,1<<15)
-	re = random.randrange(-1<<15,1<<15)
-	return complex(re,im)
+def rand_complex32():
+    """Returns randomized complex value with Re and Im in short type range"""
+    im = random.randrange(-32768, 32767)
+    re = random.randrange(-32768, 32767)
+    return complex(re, im)
 
 
-def hexp(a,bits=16):
-	return (int(a) & (2**bits - 1))
+def int_to_short(a, bits=16):
+    return int(a) & (2 ** bits - 1)
 
 
-def htoi(h):
-	x = int(h,16)
-	if x > 0x7FFFFFFF:
-	    x -= 0x100000000
+def gen_input(size, pack_num=1, bus_num=2, file=axis_i_file):
+    """Creates and returns list of lists with input axis transactions and generates input file"""
+    trans_num = int(size / bus_num)
+    packet_list = []
+    with open(file, "w+") as f:
+        for p in range(pack_num):
+            # generate packet
+            packet = []
+            for i in range(trans_num):
+                # generate data
+                for b in range(bus_num):
+                    data = rand_complex32()
+                    packet.append(data)
+                    f.write("{0:04x}{1:04x}_".format(int_to_short(data.imag), int_to_short(data.real)))
+                f.write("\n")
 
-	return x
+            # add packet to list
+            packet_list.append(packet)
 
-
-def genInput(size, packNum=1, busNum=2, file=axis_i_file):
-	transNum = int(size/busNum)
-	packetList = []
-	with open(file,"w+") as f:
-		for p in range(packNum):
-			# generate packet
-			packet = []
-			for i in range(transNum):
-				# generate data
-				for b in range(busNum):
-					data = randComplex()
-					packet.append(data)
-					f.write("{0:04x}{1:04x}_".format(hexp(data.imag),hexp(data.real)))
-				f.write("\n")
-
-			# add packet to list
-			packetList.append(packet)
-
-	return packetList
+    return packet_list
 
 
-def genWindow(size, file=window_i_file):
-	window = []
-	with open(file,"w+") as f:
-		for i in range(size):
-			# data = randComplex()
-			data = complex(0,i)
-			window.append(data)
-			f.write("{0:04x}{1:04x}\n".format(hexp(data.imag),hexp(data.real)))
-	
-	return window
+def gen_window(size, file=window_i_file):
+    """Creates and returns list of window samples and generates input window file"""
+    window = []
+    with open(file, "w+") as f:
+        for i in range(size):
+            data = rand_complex32()
+            window.append(data)
+            f.write("{0:04x}{1:04x}\n".format(int_to_short(data.imag), int_to_short(data.real)))
+
+    return window
 
 
-def genReference(outDataList,busNum=2,file=axis_check_file):
-	with open(file,"w+") as f:
-		for l in outDataList:
-			ltmp = l.copy()
-			while len(ltmp) > busNum:
-				f.write("0_")
-				for b in range(busNum):
-					transPart = ltmp.pop(0)
-					f.write("{0:08x}{1:08x}".format(hexp(transPart.imag,32),hexp(transPart.real,32)))
-				f.write("\n")
-			else:
-				f.write("1_")
-				for b in range(busNum):
-					transPart = ltmp.pop(0)
-					f.write("{0:08x}{1:08x}".format(hexp(transPart.imag,32),hexp(transPart.real,32)))
-				f.write("\n")
+def gen_reference(out_data_list, bus_num=2, file=axis_check_file):
+    """Creates file with output reference transactions"""
+    with open(file, "w+") as f:
+        for l in out_data_list:
+            l_tmp = l.copy()
+            while len(l_tmp) > bus_num:
+                f.write("0_")
+                for b in range(bus_num):
+                    trans_part = l_tmp.pop(0)
+                    f.write("{0:08x}{1:08x}".format(int_to_short(trans_part.imag, 32), int_to_short(trans_part.real, 32)))
+                f.write("\n")
+            else:
+                f.write("1_")
+                for b in range(bus_num):
+                    trans_part = l_tmp.pop(0)
+                    f.write("{0:08x}{1:08x}".format(int_to_short(trans_part.imag, 32), int_to_short(trans_part.real, 32)))
+                f.write("\n")
 
 
-def runTest(packetSize=64,packetNum=5,busNum=2,revertAddr=False,randInput=False,randOutput=False):
+def run_test(packet_size=64, packet_num=5, bus_num=2, revert_addr=False, rand_input=False, rand_output=False):
+    print('Run configuration: FFT_SIZE={:d}, BUS_NUM={:d}, APB_A_REV={:d}, IN_RAND={:d}, OUT_RAND={:d} -- '.format(
+        packet_size, bus_num, revert_addr, rand_input, rand_output),
+        end='')
 
-	print('Run configuration: FFT_SIZE={:d}, BUS_NUM={:d}, APB_A_REV={:d}, IN_RAND={:d}, OUT_RAND={:d} -- '.format(
-		packetSize,busNum,revertAddr,randInput,randOutput),
-		end='')
+    # generate input transactions
+    inp = gen_input(packet_size, packet_num, bus_num)
+    win_tmp = gen_window(packet_size)
+    win = win_tmp.copy()
 
-	# generate input transactions
-	inp = genInput(packetSize,packetNum,busNum)
-	win_tmp = genWindow(packetSize)
-	win = win_tmp.copy()
+    # revert address bits if necessary
+    if revert_addr:
+        for i in range(packet_size):
+            i_rev = int('{0:0{1}b}'.format(i, packet_size.bit_length() - 1)[::-1], 2)
+            win[i] = win_tmp[i_rev]
 
-	# revert address bits if necessary
-	if revertAddr:
-		for i in range(packetSize):
-			i_rev = int('{0:0{1}b}'.format(i,packetSize.bit_length()-1)[::-1], 2)
-			win[i] = win_tmp[i_rev]
+    # generate reference result
+    math_log = open(math_log_file, 'w')
+    math_log.write('data * window = result\n')
+    result = []
+    for p in inp:
+        rp = []
+        for i in range(len(p)):
+            rp.append(p[i] * win[i])
+            math_log.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i] * win[i]) + '\n')
+        result.append(rp)
 
-	# generate reference result
-	math_log = open(math_log_file,'w')
-	math_log.write('data * window = result\n')
-	result = []
-	for p in inp:
-		rp = []
-		for i in range(len(p)):
-			rp.append(p[i]*win[i])
-			math_log.write(str(p[i]) + ' * ' + str(win[i]) + ' = ' + str(p[i]*win[i]) + '\n')
-		result.append(rp)
+    gen_reference(result, bus_num)
 
-	genReference(result,busNum)
+    # run vsim
+    script_conf = '-do "do run.tcl'
+    script_conf += ' {}'.format(packet_size)
+    script_conf += ' {}'.format(bus_num)
+    script_conf += ' 1' if revert_addr else ' 0'
+    script_conf += ' 1' if rand_input else ' 0'
+    script_conf += ' 1' if rand_output else ' 0'
+    script_conf += '"'
 
-	# run vsim
-	script_conf = '-do "do run.tcl'
-	script_conf += ' {}'.format(packetSize)
-	script_conf += ' {}'.format(busNum)
-	script_conf += ' 1' if revertAddr else ' 0'
-	script_conf += ' 1' if randInput else ' 0'
-	script_conf += ' 1' if randOutput else ' 0'
-	script_conf += '"' 
+    vsim = 'vsim -c ' + script_conf
 
-	vsim = 'vsim -c ' + script_conf
+    subprocess.call(vsim, shell=True, stdout=subprocess.DEVNULL)
 
-	subprocess.call(vsim,shell=True,stdout=subprocess.DEVNULL)
-
-	# check results
-	if filecmp.cmp(axis_o_file,axis_check_file):
-		print('Check passed!')
-		math_log.write('Check passed!')
-	else:
-		print('Files do not match!', end=' ')
-		math_log.write('Files do not match!')
-		print('({})'.format(vsim))
-	math_log.close()
+    # check results
+    if filecmp.cmp(axis_o_file, axis_check_file):
+        print('Check passed!')
+        math_log.write('Check passed!')
+    else:
+        print('Files do not match!', end=' ')
+        math_log.write('Files do not match!')
+        print('({})'.format(vsim))
+    math_log.close()
 
 
 if __name__ == '__main__':
 
-	packetSizeCases = [128, 512, 2048, 4096, 8192]
-	busNumCases = [2, 4, 8]
-	revertAddrCases = [True,False]
-	randInputCases = [True,False]
-	randOutputCases = [True,False]
+    packet_size_cases = [128, 512, 2048, 4096, 8192]
+    bus_num_cases = [2, 4, 8]
+    revert_addr_cases = [True, False]
+    rand_input_cases = [True, False]
+    rand_output_cases = [True, False]
 
-	for rev in revertAddrCases:
-		for bnum in busNumCases:
-			for size in packetSizeCases:
-				for i in randInputCases:
-					for o in randOutputCases:
-						runTest(packetSize=size,packetNum=10,busNum=bnum,revertAddr=rev,randInput=i,randOutput=o)
+    for rev in revert_addr_cases:
+        for b in bus_num_cases:
+            for size in packet_size_cases:
+                for i in rand_input_cases:
+                    for o in rand_output_cases:
+                        run_test(packet_size=size, packet_num=10, bus_num=b, revert_addr=rev, rand_input=i, rand_output=o)
 
-	# runTest(packetSize=32,packetNum=5,busNum=4,revertAddr=False,randInput=True,randOutput=True)
-
+    # run_test(packet_size=32,packet_num=5,bus_num=4,revert_addr=False,rand_input=True,rand_output=True)
