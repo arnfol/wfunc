@@ -8,7 +8,6 @@
 # The order of the files matters.
 #
 
-common/axis_pkg.sv
 common/spram.sv
 
 complex_int_mult.sv
