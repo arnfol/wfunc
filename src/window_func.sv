@@ -95,10 +95,11 @@ x0000-[(FFT_SIZE-1)*4]). After reception of TLAST FSM goes  to WAIT state (5).
 				  
 */
 module window_func #(
-	FFT_SIZE  = 8192                        , // should be power of 2
-	BUS_NUM   = 2                           , // should be >= 2
-	APB_A_REV = 0                           , // either do bit revert on APB address (1) or not (0)
-	APB_AW    = $clog2(FFT_SIZE-1)+2+1        // do not change it
+	FFT_SIZE     = 8192                        , // should be power of 2
+	BUS_NUM      = 2                           , // should be >= 2
+	APB_A_REV    = 0                           , // either do bit revert on APB address (1) or not (0)
+	ADD_PIPE_NUM = 7                           , // either do bit revert on APB address (1) or not (0)
+	APB_AW       = $clog2(FFT_SIZE-1)+2+1        // do not change it
 ) (
 	input                                 clk       ,
 	input                                 rst_n     ,
@@ -121,6 +122,8 @@ module window_func #(
 );
 
 	localparam MEM_AW = $clog2((FFT_SIZE/BUS_NUM)-1);
+
+	localparam MATH_DELAY = 3 + ADD_PIPE_NUM;
 
 	localparam IM = 1;
 	localparam RE = 0;
@@ -147,7 +150,6 @@ module window_func #(
 		return out;
 	endfunction : bit_rev
 
-	localparam MATH_DELAY = 10;
 
 	enum logic [1:0] {IDLE = 2'b00,
 					  WAIT = 2'b01,
