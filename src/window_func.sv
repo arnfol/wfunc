@@ -98,7 +98,6 @@ module window_func #(
 	FFT_SIZE  = 8192                        , // should be power of 2
 	BUS_NUM   = 2                           , // should be >= 2
 	APB_A_REV = 0                           , // either do bit revert on APB address (1) or not (0)
-	MEM_AW    = $clog2((FFT_SIZE/BUS_NUM)-1), // do not change it
 	APB_AW    = $clog2(FFT_SIZE-1)+2+1        // do not change it
 ) (
 	input                                 clk       ,
@@ -120,6 +119,8 @@ module window_func #(
 	input        [       31:0]            pwdata    ,
 	output logic [       31:0]            prdata
 );
+
+	localparam MEM_AW = $clog2((FFT_SIZE/BUS_NUM)-1);
 
 	localparam IM = 1;
 	localparam RE = 0;
