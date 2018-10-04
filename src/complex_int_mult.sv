@@ -30,23 +30,23 @@
 
 */
 module complex_int_mult
-    import axis_pkg::*;
+    import complex_pkg::*;
 #(
     PIPE_NUM = 10, // should be > 2
     DISPLNUM = 0
 ) (
-    input               clk  ,
-    input               rst_n,
-    input               en   , // enable of the module, 0 stops operation
-    input  sample_t_int a    , // input 1
-    input  sample_t_int b    , // input 2
-    output sample_t     z      // result
+    input            clk  ,
+    input            rst_n,
+    input            en   , // enable of the module, 0 stops operation
+    input  complex32 a    , // input 1
+    input  complex32 b    , // input 2
+    output complex64 z      // result
 );
 
     localparam ADD_PIPE_NUM = PIPE_NUM-2;
 
-    sample_t z_reg[ADD_PIPE_NUM]; 
-    sample_t_int a_del, b_del;
+    complex64 z_reg[ADD_PIPE_NUM]; 
+    complex32 a_del, b_del;
     logic signed [31:0] are_bre, aim_bim, are_bim, aim_bre;
 
 

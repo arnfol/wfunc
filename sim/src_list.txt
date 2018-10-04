@@ -9,6 +9,7 @@
 #
 
 common/spram.sv
+common/complex_pkg.sv
 
 complex_int_mult.sv
 window_func.sv

@@ -121,23 +121,10 @@ module window_func #(
 	output logic [       31:0]            prdata
 );
 
+	import complex_pkg::*;
+	
 	localparam MEM_AW = $clog2((FFT_SIZE/BUS_NUM)-1);
-
 	localparam MATH_DELAY = 3 + ADD_PIPE_NUM;
-
-	localparam IM = 1;
-	localparam RE = 0;
-
-	typedef struct packed {
-		logic signed [31:0] re;
-		logic signed [31:0] im;
-	} complex64;
-
-	typedef struct packed {
-		logic signed  [15:0] re;
-		logic signed  [15:0] im;
-	} complex32;
-
 
 	// function returns bit-reverse vector
 	function logic [APB_AW-2:2] bit_rev(logic [APB_AW-2:2] in);
