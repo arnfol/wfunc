@@ -196,8 +196,14 @@ module window_func #(
 	assign fsm_addr = (APB_A_REV) ? bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2];
 	assign fsm_cs   = (APB_A_REV) ? bit_rev(paddr[APB_AW-2:2]) : paddr[APB_AW-2:2]; // automatically truncated
 
-	assign prdata = (paddr[APB_AW-1]) ? reg_rdata : mem_rdata[fsm_addr[$clog2(BUS_NUM)+1:2]];
-
+	always_ff @(posedge clk or negedge rst_n) begin : proc_prdata
+		if(~rst_n) begin
+			prdata <= '0;
+		end else begin
+			prdata <= (paddr[APB_AW-1]) ? reg_rdata : mem_rdata[fsm_addr[$clog2(BUS_NUM)+1:2]];
+		end
+	end
+	
 	always_comb begin : proc_fsm
 		mem_write = '0;
 		mem_wdata = '0;
